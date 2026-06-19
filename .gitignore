@@ -1,4 +1,11 @@
-.env
+common.env
+infrastructure/env/*.env
+services/*/.env
+
+!common.env.example
+!infrastructure/env/*.env.example
+!services/*/.env.example
+
 fullchain.pem
 privkey.pem
 
@@ -144,9 +151,7 @@ celerybeat.pid
 .env
 .envrc
 .venv
-env/
 venv/
-ENV/
 env.bak/
 venv.bak/
 
