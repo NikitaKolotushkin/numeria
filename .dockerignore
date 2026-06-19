@@ -1,0 +1,7 @@
+.git
+.github
+frontend/node_modules
+**/__pycache__
+**/.venv
+**/venv
+**/eggs
