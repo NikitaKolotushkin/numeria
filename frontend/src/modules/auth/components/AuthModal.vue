@@ -17,12 +17,12 @@
 
         <!-- Поле Email с валидацией -->
         <div class="form-group">
-          <label>Корпоративный Email (@guu.ru)</label>
+          <label>Учебная почта ГУУ (@guu.ru)</label>
           <input 
             type="email" 
             v-model="form.email" 
             required 
-            placeholder="student@guu.ru"
+            placeholder="danil_zenin@guu.ru"
             :class="{ 'input-error': errorMessage }"
             @input="errorMessage = ''" 
           />
@@ -106,7 +106,6 @@ const handleSubmit = async () => {
   try {
     const cleanEmail = form.email.trim().toLowerCase()
     await authStore.login(cleanEmail, form.password)
-    alert('Валидация прошла успешно! Вы авторизованы.')
     handleClose()
   } catch (err) {
     errorMessage.value = err.message || 'Ошибка при входе'

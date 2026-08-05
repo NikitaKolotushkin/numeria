@@ -84,13 +84,13 @@ const isAuthOpen = ref(false)
 }
 
 .version-title { 
-  font-size: 16px; 
+  font-size: 32px; 
   opacity: 0.9; 
-  font-weight: 400;
+  font-weight: 700;
 }
 .version-num { 
-  font-size: 22px; 
-  font-weight: 700; 
+  font-size: 24px; 
+  font-weight: 400; 
 }
 
 /* Стилизация логотипов партнеров */
@@ -124,7 +124,7 @@ const isAuthOpen = ref(false)
 }
 
 .main-logo {
-  max-width: 380px;   /* Подберите подходящую ширину под ваш PNG */
+  max-width: 520px;   /* Подберите подходящую ширину под ваш PNG */
   height: auto;
   object-fit: contain;
   filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.4));
