@@ -6,8 +6,11 @@ services/*/.env
 !infrastructure/env/*.env.example
 !services/*/.env.example
 
-fullchain.pem
-privkey.pem
+infrastructure/nginx/ssl/**
+
+!infrastructure/nginx/ssl/**/.gitkeep
+!infrastructure/nginx/ssl/fake-cert.pem
+!infrastructure/nginx/ssl/fake-key.pem
 
 .DS_Store
 

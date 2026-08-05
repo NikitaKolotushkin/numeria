@@ -1,5 +1,3 @@
-version: '3.8'
-
 x-logging: &default-logging
   driver: "json-file"
   options:
@@ -135,20 +133,20 @@ services:
     networks:
       - numeria_network
     depends_on:
-      users:
-        condition: service_started
-      study:
-        condition: service_started
-      game:
-        condition: service_started
-      crisis-engine:
-        condition: service_started
-      career:
-        condition: service_started
-      ai:
-        condition: service_started
-      notifications:
-        condition: service_started
+      # users:
+      #   condition: service_started
+      # study:
+      #   condition: service_started
+      # game:
+      #   condition: service_started
+      # crisis-engine:
+      #   condition: service_started
+      # career:
+      #   condition: service_started
+      # ai:
+      #   condition: service_started
+      # notifications:
+      #   condition: service_started
       frontend:
         condition: service_started
     deploy:
