@@ -14,13 +14,11 @@ help: ## Показать это справочное сообщение
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
 .PHONY: init-env
-init-env: ## Инициализировать локальные .env файлы из шаблонов .env.example
+init-env: ## Инициализировать локальный .env файл из шаблона common.env.example
 	@echo "==> Инициализация локальных .env файлов..."
-	@# 1. Копируем корневой файл общих настроек
-	@if [ -f common.env.example ] && [ ! -f common.env ]; then \
-		cp common.env.example common.env && echo "Создан: common.env"; \
+	@if [ -f common.env.example ] && [ ! -f .env ]; then \
+		cp common.env.example .env && echo "Создан: .env"; \
 	fi
-	@# 2. Копируем переменные для инфраструктуры (postgres, kafka, redis, s3)
 	@find infrastructure/env -name "*.env.example" | while read -r file; do \
 		target_file="$${file%.example}"; \
 		if [ ! -f "$$target_file" ]; then \
@@ -28,7 +26,6 @@ init-env: ## Инициализировать локальные .env файлы
 			echo "Создан: $$target_file"; \
 		fi; \
 	done
-	@# 3. Копируем переменные для каждого микросервиса
 	@find services -name ".env.example" | while read -r file; do \
 		target_file="$${file%.example}"; \
 		if [ ! -f "$$target_file" ]; then \
@@ -38,13 +35,17 @@ init-env: ## Инициализировать локальные .env файлы
 	done
 	@echo "==> Инициализация конфигураций завершена."
 
-
 .PHONY: up
 up: ## Запустить локальное окружение в фоновом режиме
 	docker compose -f $(COMPOSE_DEV) up -d
 
 .PHONY: down
-down: ## Остановить локальное окружение и удалить связанные volumes
+down: ## Остановить локальное окружение (без удаления данных БД)
+	docker compose -f $(COMPOSE_DEV) down
+
+.PHONY: down-v
+down-v: ## Остановить локальное окружение И СТЕРЕТЬ ВСЕ БАЗЫ ДАННЫХ (volumes)
+	@echo "⚠️  ВНИМАНИЕ: Стирание всех баз данных..."
 	docker compose -f $(COMPOSE_DEV) down -v
 
 .PHONY: build
@@ -59,6 +60,14 @@ restart: ## Перезапустить контейнеры локального
 logs: ## Просмотр логов всех контейнеров в реальном времени
 	docker compose -f $(COMPOSE_DEV) logs -f --tail=100
 
+.PHONY: migrate
+migrate: ## Применить миграции Alembic во всех 7 микросервисах
+	@echo "==> Применение миграций во всех сервисах..."
+	@for service in $(SERVICES); do \
+		echo "Миграции для сервиса: $$service..."; \
+		docker compose -f $(COMPOSE_DEV) exec $$service alembic upgrade head || exit 1; \
+	done
+	@echo "==> Все миграции успешно применены."
 
 .PHONY: prod-up
 prod-up: ## Запустить продакшен конфигурацию
@@ -71,7 +80,6 @@ prod-down: ## Остановить продакшен контейнеры
 .PHONY: prod-build
 prod-build: ## Собрать продакшен образы
 	docker compose -f $(COMPOSE_PROD) build
-
 
 .PHONY: format
 format: ## Форматировать Python-код (ruff или black) во всем монорепозитории
@@ -96,7 +104,7 @@ lint: ## Проверить код линтером (ruff или flake8)
 	fi
 
 .PHONY: test
-test: ## Запустить тесты внутри Docker-контейнеров для всех сервисов (где они настроены)
+test: ## Запустить тесты внутри Docker-контейнеров для всех сервисов
 	@echo "==> Запуск тестов в микросервисах..."
 	@for service in $(SERVICES); do \
 		if [ -d "$(SERVICES_DIR)/$$service/app/tests" ] || [ -d "$(SERVICES_DIR)/$$service/tests" ]; then \
@@ -107,15 +115,14 @@ test: ## Запустить тесты внутри Docker-контейнеро�
 		fi \
 	done
 
-
 .PHONY: clean
-clean: ## Удалить файлы кэша Python, кэш тестов и системный мусор (.DS_Store и т.д.)
+clean: ## Удалить файлы кэша Python, кэш тестов и системный мусор
 	@echo "==> Очистка временных файлов..."
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	find . -type f -name "*.pyc" -delete
 	find . -type f -name "*.pyo" -delete
 	find . -type f -name "*.pyd" -delete
-	find . -type f -name ".DS_Store" -delete
+	find . -type f -name "*.DS_Store" -delete
 	find . -type d -name ".pytest_cache" -exec rm -rf {} +
 	find . -type d -name ".ruff_cache" -exec rm -rf {} +
 	find . -type d -name ".mypy_cache" -exec rm -rf {} +
