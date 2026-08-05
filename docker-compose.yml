@@ -1,29 +1,4 @@
-x-postgres-def: &postgres-def
-  image: postgres:15-alpine
-  restart: always
-  networks:
-    - numeria_network
-  healthcheck:
-    test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
-    interval: 10s
-    timeout: 5s
-    retries: 5
-
-x-pgbouncer-def: &pgbouncer-def
-  image: edoburu/pgbouncer:latest
-  restart: always
-  networks:
-    - numeria_network
-  environment:
-    - POOL_MODE=transaction
-    - MAX_CLIENT_CONN=1000
-    - DEFAULT_POOL_SIZE=20
-    - AUTH_TYPE=any
-  healthcheck:
-    test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 || exit 1"]
-    interval: 10s
-    timeout: 5s
-    retries: 5
+version: '3.8'
 
 x-logging: &default-logging
   driver: "json-file"
@@ -38,273 +13,42 @@ x-microservice-def: &microservice-def
   networks:
     - numeria_network
   logging: *default-logging
-  # Раскомментировать после добавления /health эндпоинты в FastAPI
-  # healthcheck:
-  #   test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-  #   interval: 15s
-  #   timeout: 5s
-  #   retries: 3
+  depends_on:
+    postgres:
+      condition: service_healthy
+  deploy:
+    resources:
+      reservations:
+        memory: 64M
+      limits:
+        memory: 256M
 
 services:
-  postgres-users:
-    <<: *postgres-def
-    container_name: numeria_postgres_users
+  postgres:
+    image: postgres:15-alpine
+    container_name: numeria_postgres
+    restart: always
     environment:
-      - POSTGRES_DB=users_db
-      - POSTGRES_USER=users_user
-      - POSTGRES_PASSWORD=${DB_USERS_PASSWORD:-users_pass}
-    ports:
-      - "127.0.0.1:5431:5432"
-    volumes:
-      - postgres_users_data:/var/lib/postgresql/data
-
-  pgbouncer-users:
-    <<: *pgbouncer-def
-    container_name: numeria_pgbouncer_users
-    environment:
-      - DB_HOST=postgres-users
-      - DB_NAME=users_db
-      - DB_USER=users_user
-      - DB_PASSWORD=${DB_USERS_PASSWORD:-users_pass}
-    ports:
-      - "127.0.0.1:6431:5432"
-    depends_on:
-      postgres-users:
-        condition: service_healthy
-
-  postgres-study:
-    <<: *postgres-def
-    container_name: numeria_postgres_study
-    environment:
-      - POSTGRES_DB=study_db
-      - POSTGRES_USER=study_user
-      - POSTGRES_PASSWORD=${DB_STUDY_PASSWORD:-study_pass}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_ROOT_PASSWORD:-root_pass}
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
-      - postgres_study_data:/var/lib/postgresql/data
-
-  pgbouncer-study:
-    <<: *pgbouncer-def
-    container_name: numeria_pgbouncer_study
-    environment:
-      - DB_HOST=postgres-study
-      - DB_NAME=study_db
-      - DB_USER=study_user
-      - DB_PASSWORD=${DB_STUDY_PASSWORD:-study_pass}
-    ports:
-      - "127.0.0.1:6432:5432"
-    depends_on:
-      postgres-study:
-        condition: service_healthy
-
-  postgres-game:
-    <<: *postgres-def
-    container_name: numeria_postgres_game
-    environment:
-      - POSTGRES_DB=game_db
-      - POSTGRES_USER=game_user
-      - POSTGRES_PASSWORD=${DB_GAME_PASSWORD:-game_pass}
-    ports:
-      - "127.0.0.1:5433:5432"
-    volumes:
-      - postgres_game_data:/var/lib/postgresql/data
-
-  pgbouncer-game:
-    <<: *pgbouncer-def
-    container_name: numeria_pgbouncer_game
-    environment:
-      - DB_HOST=postgres-game
-      - DB_NAME=game_db
-      - DB_USER=game_user
-      - DB_PASSWORD=${DB_GAME_PASSWORD:-game_pass}
-    ports:
-      - "127.0.0.1:6433:5432"
-    depends_on:
-      postgres-game:
-        condition: service_healthy
-
-  postgres-crisis:
-    <<: *postgres-def
-    container_name: numeria_postgres_crisis
-    environment:
-      - POSTGRES_DB=crisis_db
-      - POSTGRES_USER=crisis_user
-      - POSTGRES_PASSWORD=${DB_CRISIS_PASSWORD:-crisis_pass}
-    ports:
-      - "127.0.0.1:5434:5432"
-    volumes:
-      - postgres_crisis_data:/var/lib/postgresql/data
-
-  pgbouncer-crisis:
-    <<: *pgbouncer-def
-    container_name: numeria_pgbouncer_crisis
-    environment:
-      - DB_HOST=postgres-crisis
-      - DB_NAME=crisis_db
-      - DB_USER=crisis_user
-      - DB_PASSWORD=${DB_CRISIS_PASSWORD:-crisis_pass}
-    ports:
-      - "127.0.0.1:6434:5432"
-    depends_on:
-      postgres-crisis:
-        condition: service_healthy
-
-  postgres-career:
-    <<: *postgres-def
-    container_name: numeria_postgres_career
-    environment:
-      - POSTGRES_DB=career_db
-      - POSTGRES_USER=career_user
-      - POSTGRES_PASSWORD=${DB_CAREER_PASSWORD:-career_pass}
-    ports:
-      - "127.0.0.1:5435:5432"
-    volumes:
-      - postgres_career_data:/var/lib/postgresql/data
-
-  pgbouncer-career:
-    <<: *pgbouncer-def
-    container_name: numeria_pgbouncer_career
-    environment:
-      - DB_HOST=postgres-career
-      - DB_NAME=career_db
-      - DB_USER=career_user
-      - DB_PASSWORD=${DB_CAREER_PASSWORD:-career_pass}
-    ports:
-      - "127.0.0.1:6435:5432"
-    depends_on:
-      postgres-career:
-        condition: service_healthy
-
-  postgres-ai:
-    <<: *postgres-def
-    container_name: numeria_postgres_ai
-    environment:
-      - POSTGRES_DB=ai_db
-      - POSTGRES_USER=ai_user
-      - POSTGRES_PASSWORD=${DB_AI_PASSWORD:-ai_pass}
-    ports:
-      - "127.0.0.1:5436:5432"
-    volumes:
-      - postgres_ai_data:/var/lib/postgresql/data
-
-  pgbouncer-ai:
-    <<: *pgbouncer-def
-    container_name: numeria_pgbouncer_ai
-    environment:
-      - DB_HOST=postgres-ai
-      - DB_NAME=ai_db
-      - DB_USER=ai_user
-      - DB_PASSWORD=${DB_AI_PASSWORD:-ai_pass}
-    ports:
-      - "127.0.0.1:6436:5432"
-    depends_on:
-      postgres-ai:
-        condition: service_healthy
-
-  postgres-notifications:
-    <<: *postgres-def
-    container_name: numeria_postgres_notifications
-    environment:
-      - POSTGRES_DB=notifications_db
-      - POSTGRES_USER=notifications_user
-      - POSTGRES_PASSWORD=${DB_NOTIFICATIONS_PASSWORD:-notifications_pass}
-    ports:
-      - "127.0.0.1:5437:5432"
-    volumes:
-      - postgres_notifications_data:/var/lib/postgresql/data
-
-  pgbouncer-notifications:
-    <<: *pgbouncer-def
-    container_name: numeria_pgbouncer_notifications
-    environment:
-      - DB_HOST=postgres-notifications
-      - DB_NAME=notifications_db
-      - DB_USER=notifications_user
-      - DB_PASSWORD=${DB_NOTIFICATIONS_PASSWORD:-notifications_pass}
-    ports:
-      - "127.0.0.1:6437:5432"
-    depends_on:
-      postgres-notifications:
-        condition: service_healthy
-
-  redis:
-    image: redis:7-alpine
-    container_name: numeria_redis
-    restart: always
-    env_file:
-      - .env
-    command: redis-server --requirepass ${REDIS_PASSWORD:-default_password}
-    ports:
-      - "127.0.0.1:6379:6379"
-    volumes:
-      - redis_data:/data
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init-dbs.sh:/docker-entrypoint-initdb.d/init-dbs.sh:ro
     networks:
       - numeria_network
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a '$${REDIS_PASSWORD:-default_password}' ping"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-
-  kafka:
-    image: apache/kafka:latest
-    container_name: numeria_kafka
-    restart: always
-    environment:
-      KAFKA_NODE_ID: 1
-      KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
-      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:9094,CONTROLLER://0.0.0.0:9093
-      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:9094
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
-      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_LOG_DIRS: /var/lib/kafka/data
-    ports:
-      - "127.0.0.1:9094:9094"
-    volumes:
-      - kafka_data:/var/lib/kafka/data
-    networks:
-      - numeria_network
-    healthcheck:
-      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 || exit 1"]
-      interval: 15s
-      timeout: 10s
       retries: 5
     deploy:
       resources:
         limits:
-          memory: 768M
+          memory: 384M
 
-  minio:
-    image: minio/minio:latest
-    container_name: numeria_minio
-    restart: always
-    command: server /data --console-address ":9001"
-    environment:
-      - MINIO_ROOT_USER=${S3_ACCESS_KEY:-minioadmin}
-      - MINIO_ROOT_PASSWORD=${S3_SECRET_KEY:-minioadmin}
-    ports:
-      - "127.0.0.1:9000:9000"
-      - "127.0.0.1:9001:9001"
-    volumes:
-      - minio_data:/data
-    networks:
-      - numeria_network
-    healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          memory: 256M
+  # --- МИКРОСЕРВИСЫ ---
 
   users:
     <<: *microservice-def
@@ -312,12 +56,7 @@ services:
     build:
       context: .
       dockerfile: services/users/Dockerfile
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
-    depends_on:
-      pgbouncer-users:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1
 
   study:
     <<: *microservice-def
@@ -325,10 +64,7 @@ services:
     build:
       context: .
       dockerfile: services/study/Dockerfile
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
-    depends_on:
-      pgbouncer-study:
-        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1
 
   game:
     <<: *microservice-def
@@ -336,14 +72,7 @@ services:
     build:
       context: .
       dockerfile: services/game/Dockerfile
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
-    depends_on:
-      pgbouncer-game:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1
 
   crisis-engine:
     <<: *microservice-def
@@ -351,12 +80,7 @@ services:
     build:
       context: .
       dockerfile: services/crisis-engine/Dockerfile
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
-    depends_on:
-      pgbouncer-crisis:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1
 
   career:
     <<: *microservice-def
@@ -364,10 +88,7 @@ services:
     build:
       context: .
       dockerfile: services/career/Dockerfile
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
-    depends_on:
-      pgbouncer-career:
-        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1
 
   ai:
     <<: *microservice-def
@@ -375,12 +96,7 @@ services:
     build:
       context: .
       dockerfile: services/ai/Dockerfile
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
-    depends_on:
-      pgbouncer-ai:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1
 
   notifications:
     <<: *microservice-def
@@ -388,12 +104,9 @@ services:
     build:
       context: .
       dockerfile: services/notifications/Dockerfile
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
-    depends_on:
-      pgbouncer-notifications:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1
+
+  # --- FRONTEND & GATEWAY ---
 
   frontend:
     container_name: numeria_frontend
@@ -403,6 +116,10 @@ services:
     networks:
       - numeria_network
     logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 128M
 
   nginx:
     image: nginx:alpine
@@ -434,19 +151,14 @@ services:
         condition: service_started
       frontend:
         condition: service_started
+    deploy:
+      resources:
+        limits:
+          memory: 128M
 
 networks:
   numeria_network:
     driver: bridge
 
 volumes:
-  postgres_users_data:
-  postgres_game_data:
-  postgres_study_data:
-  postgres_career_data:
-  postgres_crisis_data:
-  postgres_ai_data:
-  postgres_notifications_data:
-  redis_data:
-  kafka_data:
-  minio_data:
+  postgres_data:

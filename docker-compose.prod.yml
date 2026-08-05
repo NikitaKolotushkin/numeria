@@ -1,0 +1,164 @@
+version: '3.8'
+
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-microservice-def: &microservice-def
+  restart: unless-stopped
+  env_file:
+    - .env
+  networks:
+    - numeria_network
+  logging: *default-logging
+  depends_on:
+    postgres:
+      condition: service_healthy
+  deploy:
+    resources:
+      reservations:
+        memory: 64M
+      limits:
+        memory: 256M
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: numeria_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_ROOT_PASSWORD:-root_pass}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init-dbs.sh:/docker-entrypoint-initdb.d/init-dbs.sh:ro
+    networks:
+      - numeria_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+
+  # --- МИКРОСЕРВИСЫ ---
+
+  users:
+    <<: *microservice-def
+    container_name: numeria_users
+    build:
+      context: .
+      dockerfile: services/users/Dockerfile
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1
+
+  study:
+    <<: *microservice-def
+    container_name: numeria_study
+    build:
+      context: .
+      dockerfile: services/study/Dockerfile
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1
+
+  game:
+    <<: *microservice-def
+    container_name: numeria_game
+    build:
+      context: .
+      dockerfile: services/game/Dockerfile
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1
+
+  crisis-engine:
+    <<: *microservice-def
+    container_name: numeria_crisis_engine
+    build:
+      context: .
+      dockerfile: services/crisis-engine/Dockerfile
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1
+
+  career:
+    <<: *microservice-def
+    container_name: numeria_career
+    build:
+      context: .
+      dockerfile: services/career/Dockerfile
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1
+
+  ai:
+    <<: *microservice-def
+    container_name: numeria_ai
+    build:
+      context: .
+      dockerfile: services/ai/Dockerfile
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1
+
+  notifications:
+    <<: *microservice-def
+    container_name: numeria_notifications
+    build:
+      context: .
+      dockerfile: services/notifications/Dockerfile
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1
+
+  # --- FRONTEND & GATEWAY ---
+
+  frontend:
+    container_name: numeria_frontend
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    networks:
+      - numeria_network
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+  nginx:
+    image: nginx:alpine
+    container_name: numeria_nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./infrastructure/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./infrastructure/nginx/ssl:/etc/nginx/ssl:ro
+    networks:
+      - numeria_network
+    depends_on:
+      users:
+        condition: service_started
+      study:
+        condition: service_started
+      game:
+        condition: service_started
+      crisis-engine:
+        condition: service_started
+      career:
+        condition: service_started
+      ai:
+        condition: service_started
+      notifications:
+        condition: service_started
+      frontend:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+networks:
+  numeria_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
