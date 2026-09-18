@@ -7,11 +7,29 @@ const router = createRouter({
     {
       path: '/',
       name: 'landing',
-      component: LandingPage
+      component: LandingPage,
+      meta: { title: 'Нумерия — Образовательная экономическая игра' }
+    },
+    {
+      path: '/auth',
+      name: 'auth',
+      component: () => import('@/pages/AuthPage.vue'),
+      meta: { title: 'Авторизация | Нумерия' }
+    },
+    {
+      path: '/game',
+      name: 'game',
+      component: () => import('@/pages/GamePage.vue'),
+      meta: { title: 'Игровое поле | Нумерия' }
     }
-    // Задел на будущее:
-    // { path: '/dashboard', name: 'dashboard', component: () => import('@/pages/DashboardPage.vue') }
   ]
+})
+
+router.beforeEach((to, from, next) => {
+  if (to.meta.title) {
+    document.title = to.meta.title
+  }
+  next()
 })
 
 export default router
