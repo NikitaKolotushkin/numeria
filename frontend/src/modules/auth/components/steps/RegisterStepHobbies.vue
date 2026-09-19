@@ -63,7 +63,7 @@ const toggleHobby = (id) => {
 .hobbies-subtitle {
   flex-shrink: 0;
   font-size: clamp(1.05rem, 1.35vw, 1.25rem);
-  font-weight: 600;
+  font-weight: 400;
   color: #12202b;
   margin: 0 0 clamp(0.7rem, 1.6vh, 1.05rem) 0;
   text-align: center;
@@ -134,7 +134,7 @@ const toggleHobby = (id) => {
 .hobby-title {
   flex-shrink: 0;
   font-size: clamp(0.95rem, 1.15vw, 1.05rem);
-  font-weight: 600;
+  font-weight: 400;
   color: #12202b;
   text-align: center;
 }

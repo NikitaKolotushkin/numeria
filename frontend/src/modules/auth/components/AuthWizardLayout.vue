@@ -11,9 +11,7 @@
           <line x1="19" y1="12" x2="5" y2="12"></line>
           <polyline points="12 19 5 12 12 5"></polyline>
         </svg>
-        <div class="brand-icon">
-          <span class="brand-symbol">H</span>
-        </div>
+        <img class="brand-mark" src="@/assets/images/auth/logo-mark.png" alt="" />
       </button>
 
       <div class="badge-pill">
@@ -59,7 +57,8 @@ defineEmits(['prev', 'next'])
   --auth-ink: #12202b;
   --auth-input-bg: #e7eef3;
   --auth-nav-size: clamp(2.85rem, 6.2vh, 3.35rem);
-  --auth-card-height: min(72vh, 42rem);
+  --auth-card-height: min(76vh, 45rem);
+  --auth-card-padding: clamp(1.4rem, 2.4vmin, 2.15rem);
   --auth-radius: clamp(1.75rem, 2.4vw, 2.5rem);
   --auth-media-radius: clamp(1.15rem, 1.6vw, 1.55rem);
   width: 100%;
@@ -101,21 +100,12 @@ defineEmits(['prev', 'next'])
   gap: 0.7rem;
 }
 
-.brand-icon {
+.brand-mark {
   width: 1.85rem;
   height: 1.85rem;
-  background: #061e27;
+  display: block;
+  object-fit: contain;
   border-radius: 0.55rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.brand-symbol {
-  color: #ffffff;
-  font-weight: 800;
-  font-size: 0.95rem;
-  line-height: 1;
 }
 
 .btn-circle {
@@ -134,7 +124,7 @@ defineEmits(['prev', 'next'])
   border-radius: 9999px;
   padding: 0 clamp(1.6rem, 3vw, 2.8rem);
   font-size: clamp(0.95rem, 1.15vw, 1.125rem);
-  font-weight: 600;
+  font-weight: 500;
   color: var(--auth-ink);
   box-shadow: 0 0.3rem 1rem rgba(18, 32, 43, 0.08);
   display: flex;
@@ -148,7 +138,7 @@ defineEmits(['prev', 'next'])
   height: var(--auth-card-height);
   background: #ffffff;
   border-radius: var(--auth-radius);
-  padding: clamp(1.2rem, 2.6vh, 1.8rem) clamp(1.6rem, 2.8vw, 2.6rem) clamp(1.35rem, 2.8vh, 2rem);
+  padding: var(--auth-card-padding);
   box-shadow: 0 1.25rem 3rem rgba(18, 32, 43, 0.14);
   display: flex;
   flex-direction: column;

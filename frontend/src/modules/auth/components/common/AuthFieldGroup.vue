@@ -22,7 +22,7 @@ defineProps({
 
 .group-title {
   font-size: clamp(0.95rem, 1.15vw, 1.05rem);
-  font-weight: 600;
+  font-weight: 400;
   color: #12202b;
   margin: 0 0 0 0.55rem;
   letter-spacing: -0.01em;

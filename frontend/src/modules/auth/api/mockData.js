@@ -5,29 +5,29 @@ import hobbyAuto from '@/assets/images/auth/hobby-auto.png'
 import hobbyCreativity from '@/assets/images/auth/hobby-creativity.png'
 import hobbyBooks from '@/assets/images/auth/hobby-books.png'
 
-export const UNIVERSITIES = [
-  'Государственный университет управления (ГУУ)',
-  'Санкт-Петербургский государственный университет (СПбГУ)',
-  'Саратовский государственный технический университет (СГТУ)',
-  'Другой университет'
-]
+export const ALLOWED_EMAIL_DOMAIN = 'guu.ru'
 
-export const STUDY_DIRECTIONS = [
-  'Прикладная информатика',
-  'Менеджмент и управление',
-  'Экономика и финансы',
-  'Бизнес-информатика',
-  'Маркетинг и реклама',
-  'Государственное и муниципальное управление'
-]
+export const isAllowedRegistrationEmail = (email) => {
+  const normalized = String(email || '').trim().toLowerCase()
+  const at = normalized.lastIndexOf('@')
+  if (at <= 0) return false
 
-export const COURSES = [
-  { value: 1, label: '1 курс' },
-  { value: 2, label: '2 курс' },
-  { value: 3, label: '3 курс' },
-  { value: 4, label: '4 курс' },
-  { value: 5, label: 'Магистратура' }
-]
+  const local = normalized.slice(0, at)
+  const domain = normalized.slice(at + 1)
+
+  return Boolean(local) && !local.includes(' ') && domain === ALLOWED_EMAIL_DOMAIN
+}
+
+export const MIN_COURSE = 1
+export const MAX_COURSE = 6
+
+export const isAllowedCourse = (course) => {
+  const normalized = String(course || '').trim()
+  if (!/^\d+$/.test(normalized)) return false
+
+  const value = Number(normalized)
+  return value >= MIN_COURSE && value <= MAX_COURSE
+}
 
 export const HOBBIES_LIST = [
   { id: 'sport', title: 'Спорт', image: hobbySport },

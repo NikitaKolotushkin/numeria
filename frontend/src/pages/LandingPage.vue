@@ -2,22 +2,38 @@
   <div class="landing-page">
     <!-- Шапка справа -->
     <header class="top-bar">
-      <!-- Состояние гостя -->
       <div v-if="!authStore.isAuthenticated" class="auth-buttons">
         <router-link to="/auth?mode=login" class="btn-primary">Вход</router-link>
         <router-link to="/auth?mode=register" class="btn-primary btn-outline">Регистрация</router-link>
       </div>
-
-      <!-- Состояние игрока -->
-      <div v-else class="user-header-card">
-        <div class="user-avatar">{{ authStore.user?.nickname?.charAt(0) || 'Н' }}</div>
-        <div class="user-meta">
-          <span class="user-name">{{ authStore.user?.nickname }}</span>
-          <span class="user-rank">Топ #{{ authStore.user?.stats?.rankPosition }}</span>
-        </div>
-        <button class="btn-logout" @click="authStore.logout" title="Выйти">✕</button>
-      </div>
+      <button
+        v-else
+        type="button"
+        class="btn-primary"
+        @click="authStore.logout"
+      >
+        Выйти
+      </button>
     </header>
+
+    <aside v-if="authStore.isAuthenticated" class="player-panel">
+      <div class="player-row">
+        <img
+          class="player-avatar"
+          src="@/assets/images/hub/avatar.png"
+          alt=""
+        />
+        <span>{{ authStore.user?.firstName || authStore.user?.nickname }}</span>
+      </div>
+      <div class="player-row">
+        <img class="player-icon" src="@/assets/images/hub/coin.png" alt="" />
+        <span>{{ authStore.user?.stats?.capital?.toLocaleString('ru-RU') }}</span>
+      </div>
+      <div class="player-row">
+        <img class="player-icon" src="@/assets/images/hub/trophy.png" alt="" />
+        <span>Топ-{{ authStore.user?.stats?.rankPosition }}</span>
+      </div>
+    </aside>
 
     <!-- Сайдбар слева -->
     <aside class="left-sidebar">
@@ -49,27 +65,9 @@
         </router-link>
       </div>
 
-      <!-- СОСТОЯНИЕ 2: АВТОРИЗОВАННЫЙ ИГРОК (ХАБ) -->
-      <div v-else class="player-hub-card">
-        <div class="hub-stats">
-          <div class="stat-box">
-            <span class="stat-label">Капитал</span>
-            <span class="stat-val">{{ authStore.user?.stats?.capital?.toLocaleString('ru-RU') }} ₽</span>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="stat-box">
-            <span class="stat-label">Энергия</span>
-            <span class="stat-val">{{ authStore.user?.stats?.energy }}/{{ authStore.user?.stats?.maxEnergy }}</span>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="stat-box">
-            <span class="stat-label">Институт</span>
-            <span class="stat-val">{{ authStore.user?.group }}</span>
-          </div>
-        </div>
-
-        <router-link to="/game" class="btn-primary btn-large btn-play">
-          Продолжить игру →
+      <div v-else class="guest-cta">
+        <router-link to="/game" class="btn-primary btn-large">
+          Играть!
         </router-link>
       </div>
     </main>
@@ -99,7 +97,7 @@
     backdrop-filter: blur(2px);
   }
 
-  .top-bar, .left-sidebar, .hero {
+  .top-bar, .left-sidebar, .player-panel, .hero {
     position: relative;
     z-index: 2;
   }
@@ -115,59 +113,38 @@
     gap: 0.75rem;
   }
 
-  .user-header-card {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    background: rgba(15, 23, 42, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    padding: 0.5rem 1rem;
-    border-radius: 9999px;
-    backdrop-filter: blur(0.625rem);
-  }
-
-  .user-avatar {
-    width: 2rem;
-    height: 2rem;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.12);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.875rem;
-    font-weight: 700;
-    color: #fff;
-    text-transform: uppercase;
-  }
-
-  .user-meta {
+  .player-panel {
+    position: absolute;
+    right: clamp(1.5rem, 3.2vw, 3rem);
+    top: 50%;
+    transform: translateY(-50%);
     display: flex;
     flex-direction: column;
+    gap: clamp(0.85rem, 2.2vh, 1.35rem);
   }
 
-  .user-name {
-    font-size: 0.875rem;
-    font-weight: 700;
+  .player-row {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
     color: #fff;
+    font-size: clamp(1rem, 1.6vw, 1.35rem);
+    font-weight: 400;
   }
 
-  .user-rank {
-    font-size: 0.6875rem;
-    color: var(--color-accent);
+  .player-icon,
+  .player-avatar {
+    width: clamp(2.25rem, 3.4vw, 3rem);
+    height: clamp(2.25rem, 3.4vw, 3rem);
+    flex-shrink: 0;
+    display: block;
+    object-fit: contain;
+    filter: drop-shadow(0 0.1rem 0.2rem rgba(0, 0, 0, 0.35));
   }
 
-  .btn-logout {
-    background: transparent;
-    border: none;
-    color: var(--color-text-muted);
-    cursor: pointer;
-    font-size: 0.875rem;
-    margin-left: 0.5rem;
-    padding: 0.25rem;
-  }
-
-  .btn-logout:hover {
-    color: #ef4444;
+  .player-avatar {
+    border-radius: 50%;
+    object-fit: cover;
   }
 
   .left-sidebar {
@@ -252,54 +229,4 @@
     border-radius: 9999px;
   }
 
-  .player-hub-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1.5rem;
-    background: rgba(15, 23, 42, 0.75);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    padding: 1.5rem 2.25rem;
-    border-radius: 1.5rem;
-    backdrop-filter: blur(0.75rem);
-    box-shadow: 0 1.25rem 2.5rem rgba(0, 0, 0, 0.4);
-  }
-
-  .hub-stats {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-  }
-
-  .stat-box {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.25rem;
-  }
-
-  .stat-label {
-    font-size: 0.75rem;
-    color: var(--color-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-  }
-
-  .stat-val {
-    font-size: 1rem;
-    font-weight: 700;
-    color: #fff;
-  }
-
-  .stat-divider {
-    width: 1px;
-    height: 2rem;
-    background: rgba(255, 255, 255, 0.15);
-  }
-
-  .btn-play {
-    background: #061e27;
-    border: 1px solid var(--color-accent);
-    box-shadow: 0 0 1.25rem rgba(56, 189, 248, 0.2);
-  }
 </style>

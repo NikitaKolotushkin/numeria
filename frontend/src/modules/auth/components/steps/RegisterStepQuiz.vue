@@ -89,7 +89,7 @@ const selectAnswer = (optionIndex) => {
   border: none;
   background: transparent;
   color: #12202b;
-  font-weight: 600;
+  font-weight: 400;
   font-size: 0.95rem;
   font-family: inherit;
   cursor: pointer;
@@ -98,14 +98,14 @@ const selectAnswer = (optionIndex) => {
 .page-btn.active {
   background: #12202b;
   color: #ffffff;
-  font-weight: 700;
+  font-weight: 400;
 }
 
 .question-text {
   max-width: 28rem;
   font-size: clamp(0.95rem, 1.2vw, 1.08rem);
   line-height: 1.5;
-  font-weight: 500;
+  font-weight: 400;
   color: #12202b;
   margin: 0;
 }
@@ -142,6 +142,6 @@ const selectAnswer = (optionIndex) => {
   font-size: clamp(0.9rem, 1.1vw, 1rem);
   line-height: 1.45;
   color: #12202b;
-  font-weight: 500;
+  font-weight: 400;
 }
 </style>

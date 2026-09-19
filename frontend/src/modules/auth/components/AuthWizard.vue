@@ -48,6 +48,7 @@ import RegisterStepSecurity from '@/modules/auth/components/steps/RegisterStepSe
 import RegisterStepHobbies from '@/modules/auth/components/steps/RegisterStepHobbies.vue'
 import RegisterStepQuiz from '@/modules/auth/components/steps/RegisterStepQuiz.vue'
 import RegisterStepWelcome from '@/modules/auth/components/steps/RegisterStepWelcome.vue'
+import { isAllowedCourse, isAllowedRegistrationEmail } from '@/modules/auth/api/mockData'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -78,7 +79,7 @@ const formData = reactive({
   lastName: '',
   university: '',
   direction: '',
-  course: 1,
+  course: '',
   email: '',
   password: '',
   confirmPassword: '',
@@ -108,12 +109,16 @@ const handleNext = async () => {
       errorMessage.value = 'Пожалуйста, укажите имя и фамилию'
       return
     }
-    if (!formData.university) {
-      errorMessage.value = 'Выберите ваш университет'
+    if (!formData.university.trim()) {
+      errorMessage.value = 'Укажите ваш университет'
       return
     }
-    if (!formData.direction) {
-      errorMessage.value = 'Выберите направление обучения'
+    if (!formData.direction.trim()) {
+      errorMessage.value = 'Укажите направление обучения'
+      return
+    }
+    if (!isAllowedCourse(formData.course)) {
+      errorMessage.value = 'Укажите курс цифрой от 1 до 6'
       return
     }
     currentStep.value = 2
@@ -123,6 +128,10 @@ const handleNext = async () => {
   if (currentStep.value === 2) {
     if (!formData.email.trim() || !formData.email.includes('@')) {
       errorMessage.value = 'Введите корректный email'
+      return
+    }
+    if (!isAllowedRegistrationEmail(formData.email)) {
+      errorMessage.value = 'Регистрация доступна только для почты @guu.ru'
       return
     }
     if (!formData.password || formData.password.length < 4) {

@@ -44,7 +44,7 @@ defineProps({
 }
 
 .variant-form .split-left {
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .variant-form .split-right {

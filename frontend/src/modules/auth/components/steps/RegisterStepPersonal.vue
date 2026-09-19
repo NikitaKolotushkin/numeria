@@ -8,23 +8,14 @@
         </AuthFieldGroup>
 
         <AuthFieldGroup title="Учеба">
-          <AuthInput
-            v-model="modelValue.university"
-            type="select"
-            placeholder="Университет"
-            :options="UNIVERSITIES"
-          />
-          <AuthInput
-            v-model="modelValue.direction"
-            type="select"
-            placeholder="Направление"
-            :options="STUDY_DIRECTIONS"
-          />
+          <AuthInput v-model="modelValue.university" placeholder="Университет" />
+          <AuthInput v-model="modelValue.direction" placeholder="Направление" />
           <AuthInput
             v-model="modelValue.course"
-            type="select"
             placeholder="Курс"
-            :options="COURSES"
+            inputmode="numeric"
+            :maxlength="1"
+            digits-only
           />
         </AuthFieldGroup>
       </AuthFieldsStack>
@@ -42,7 +33,6 @@ import AuthMediaCard from '@/modules/auth/components/common/AuthMediaCard.vue'
 import AuthFieldsStack from '@/modules/auth/components/common/AuthFieldsStack.vue'
 import AuthFieldGroup from '@/modules/auth/components/common/AuthFieldGroup.vue'
 import AuthInput from '@/modules/auth/components/common/AuthInput.vue'
-import { UNIVERSITIES, STUDY_DIRECTIONS, COURSES } from '@/modules/auth/api/mockData'
 import personalArt from '@/assets/images/auth/step-personal.png'
 
 defineProps({

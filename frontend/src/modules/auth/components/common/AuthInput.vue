@@ -1,56 +1,45 @@
 <template>
   <div class="auth-input-wrapper">
-    <div v-if="type === 'select'" class="select-container">
-      <select
-        :value="modelValue"
-        class="auth-input custom-select"
-        @change="$emit('update:modelValue', $event.target.value)"
-      >
-        <option value="" disabled>{{ placeholder }}</option>
-        <option
-          v-for="opt in options"
-          :key="typeof opt === 'object' ? opt.value : opt"
-          :value="typeof opt === 'object' ? opt.value : opt"
-        >
-          {{ typeof opt === 'object' ? opt.label : opt }}
-        </option>
-      </select>
-      <svg class="select-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="6 9 12 15 18 9"></polyline>
-      </svg>
-    </div>
-
     <input
-      v-else
       :type="type"
       :value="modelValue"
       :placeholder="placeholder"
       :autocomplete="autocomplete"
+      :inputmode="inputmode"
+      :maxlength="maxlength"
       class="auth-input"
-      @input="$emit('update:modelValue', $event.target.value)"
+      @input="handleInput"
     />
   </div>
 </template>
 
 <script setup>
-defineProps({
+const props = defineProps({
   modelValue: { type: [String, Number], default: '' },
   type: { type: String, default: 'text' },
   placeholder: { type: String, default: '' },
-  options: { type: Array, default: () => [] },
-  autocomplete: { type: String, default: 'off' }
+  autocomplete: { type: String, default: 'off' },
+  inputmode: { type: String, default: 'text' },
+  maxlength: { type: [Number, String], default: undefined },
+  digitsOnly: { type: Boolean, default: false }
 })
 
-defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue'])
+
+const handleInput = (event) => {
+  let value = event.target.value
+
+  if (props.digitsOnly) {
+    value = value.replace(/\D/g, '')
+    event.target.value = value
+  }
+
+  emit('update:modelValue', value)
+}
 </script>
 
 <style scoped>
 .auth-input-wrapper {
-  width: 100%;
-}
-
-.select-container {
-  position: relative;
   width: 100%;
 }
 
@@ -71,22 +60,5 @@ defineEmits(['update:modelValue'])
 .auth-input::placeholder {
   color: #94a3b8;
   font-weight: 400;
-}
-
-.custom-select {
-  appearance: none;
-  cursor: pointer;
-  padding-right: 2.6rem;
-}
-
-.select-chevron {
-  position: absolute;
-  right: 1.05rem;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 1rem;
-  height: 1rem;
-  color: #64748b;
-  pointer-events: none;
 }
 </style>

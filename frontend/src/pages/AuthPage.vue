@@ -1,13 +1,20 @@
 <template>
   <div class="auth-page">
     <div class="auth-container">
-      <AuthWizard />
+      <LoginWizard v-if="isLogin" />
+      <AuthWizard v-else />
     </div>
   </div>
 </template>
 
 <script setup>
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import AuthWizard from '@/modules/auth/components/AuthWizard.vue'
+import LoginWizard from '@/modules/auth/components/LoginWizard.vue'
+
+const route = useRoute()
+const isLogin = computed(() => route.query.mode === 'login')
 </script>
 
 <style scoped>
