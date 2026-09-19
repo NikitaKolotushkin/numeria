@@ -27,6 +27,16 @@ body {
   overflow-x: hidden;
 }
 
+body.portrait-lock {
+  overflow: hidden;
+}
+
+@media (orientation: portrait) {
+  body {
+    overflow: hidden;
+  }
+}
+
 button,
 input,
 select,

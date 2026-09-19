@@ -7,6 +7,10 @@ import hobbyBooks from '@/assets/images/auth/hobby-books.png'
 
 export const ALLOWED_EMAIL_DOMAIN = 'guu.ru'
 
+export const AUTH_TEMPORARILY_UNAVAILABLE = true
+export const AUTH_REGISTER_UNAVAILABLE_MESSAGE = 'Попробуйте позже'
+export const AUTH_LOGIN_UNAVAILABLE_MESSAGE = 'Почта или пароль неверны'
+
 export const isAllowedRegistrationEmail = (email) => {
   const normalized = String(email || '').trim().toLowerCase()
   const at = normalized.lastIndexOf('@')

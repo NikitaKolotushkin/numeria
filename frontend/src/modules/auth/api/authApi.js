@@ -1,4 +1,4 @@
-import { MOCK_AUTH_RESPONSE, MOCK_USER, isAllowedCourse, isAllowedRegistrationEmail } from '@/modules/auth/api/mockData'
+import { MOCK_AUTH_RESPONSE, MOCK_USER, AUTH_TEMPORARILY_UNAVAILABLE, AUTH_LOGIN_UNAVAILABLE_MESSAGE, AUTH_REGISTER_UNAVAILABLE_MESSAGE, isAllowedCourse, isAllowedRegistrationEmail } from '@/modules/auth/api/mockData'
 
 export const authApi = {
   async login({ email, password }) {
@@ -11,6 +11,11 @@ export const authApi = {
 
         if (!isAllowedRegistrationEmail(email)) {
           reject(new Error('Вход доступен только для почты @guu.ru'))
+          return
+        }
+
+        if (AUTH_TEMPORARILY_UNAVAILABLE) {
+          reject(new Error(AUTH_LOGIN_UNAVAILABLE_MESSAGE))
           return
         }
 
@@ -34,6 +39,11 @@ export const authApi = {
 
         if (!isAllowedCourse(registrationData.course)) {
           reject(new Error('Укажите курс цифрой от 1 до 6'))
+          return
+        }
+
+        if (AUTH_TEMPORARILY_UNAVAILABLE) {
+          reject(new Error(AUTH_REGISTER_UNAVAILABLE_MESSAGE))
           return
         }
 
