@@ -163,8 +163,6 @@ const capitalLabel = computed(() => {
 .game-page {
   width: 100%;
   height: 100dvh;
-  display: grid;
-  place-items: center;
   overflow: hidden;
   background: #5f8a0c;
 }
@@ -173,8 +171,8 @@ const capitalLabel = computed(() => {
   --inset: 0.42em;
   --stack: 0.7em;
   position: relative;
-  width: min(100%, calc(100dvh * 16 / 9));
-  aspect-ratio: 16 / 9;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
   container-type: size;
   font-size: 1.5625cqw;
@@ -241,33 +239,33 @@ const capitalLabel = computed(() => {
 .plot-laboratory {
   width: 30.88%;
   left: 2.06%;
-  top: 21.29%;
+  top: calc(21.29cqh + (30.88cqh * 1442 / 1984) * (16 / 9) - (30.88cqw * 1442 / 1984));
 }
 
 .plot-factory {
   z-index: 2;
   width: 27.22%;
   left: 19.97%;
-  top: 57.67%;
+  top: calc(57.67cqh + (27.22cqh * 1466 / 1984) * (16 / 9) - (27.22cqw * 1466 / 1984));
 }
 
 .plot-office {
   width: 26.92%;
   left: 36.91%;
-  top: 25.16%;
+  top: calc(25.16cqh + (26.92cqh * 1507 / 1984) * (16 / 9) - (26.92cqw * 1507 / 1984));
 }
 
 .plot-accounting {
   z-index: 2;
   width: 26.04%;
   left: 53.71%;
-  top: 59.05%;
+  top: calc(59.05cqh + (26.04cqh * 1467 / 1984) * (16 / 9) - (26.04cqw * 1467 / 1984));
 }
 
 .plot-marketing {
   width: 24.13%;
   left: 71.63%;
-  top: 28.91%;
+  top: calc(28.91cqh + (24.13cqh * 1507 / 1984) * (16 / 9) - (24.13cqw * 1507 / 1984));
 }
 
 .nav-pill,
