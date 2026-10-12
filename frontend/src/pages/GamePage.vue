@@ -1,18 +1,27 @@
 <template>
   <div class="game-page">
-    <div class="stage">
-      <img
+    <div
+      class="stage"
+      @click="onStageClick"
+      @pointermove="onStagePointerMove"
+    >
+      <button
         v-for="plot in plots"
         :key="plot.id"
+        type="button"
         class="plot"
         :class="`plot-${plot.id}`"
-        :src="plot.src"
-        alt=""
-      />
+        :data-building="plot.id"
+        :aria-pressed="activeBuildingId === plot.id"
+        :aria-label="plot.title"
+      >
+        <img class="plot-image" :src="plot.src" alt="" />
+        <span class="plot-label">{{ plot.title }}</span>
+      </button>
 
-      <div class="nav-pill">
-        <router-link to="/" class="nav-back" aria-label="Назад">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
+      <router-link to="/" class="nav-pill" aria-label="Назад">
+        <span class="nav-back" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
             <path
               d="M14.5 5.5 8 12l6.5 6.5"
               fill="none"
@@ -22,9 +31,9 @@
               stroke-linejoin="round"
             />
           </svg>
-        </router-link>
+        </span>
         <img class="nav-mark" src="@/assets/images/auth/logo-mark.png" alt="" />
-      </div>
+      </router-link>
 
       <section class="case-card">
         <h1 class="case-title">Кейс 2. Блок 3</h1>
@@ -48,7 +57,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useAuthStore } from '@/modules/auth/store/useAuthStore'
 import laboratory from '@/assets/images/game/buildings/01-laboratory/level-1.png'
 import factory from '@/assets/images/game/buildings/02-factory/level-1.png'
@@ -59,14 +68,90 @@ import marketing from '@/assets/images/game/buildings/05-marketing/level-1.png'
 const authStore = useAuthStore()
 
 const plots = [
-  { id: 'laboratory', src: laboratory },
-  { id: 'factory', src: factory },
-  { id: 'office', src: office },
-  { id: 'accounting', src: accounting },
-  { id: 'marketing', src: marketing }
+  { id: 'laboratory', title: 'Лаборатория', src: laboratory },
+  { id: 'factory', title: 'Завод', src: factory },
+  { id: 'office', title: 'Офис', src: office },
+  { id: 'accounting', title: 'Бухгалтерия', src: accounting },
+  { id: 'marketing', title: 'Маркетинг', src: marketing }
 ]
 
+const activeBuildingId = ref(null)
+const alphaMaps = new WeakMap()
+
 const playerName = computed(() => authStore.user?.firstName || 'Линад')
+
+function alphaAt(img, clientX, clientY) {
+  if (!img?.complete || !img.naturalWidth) return 0
+
+  const rect = img.getBoundingClientRect()
+  const x = clientX - rect.left
+  const y = clientY - rect.top
+  if (x < 0 || y < 0 || x >= rect.width || y >= rect.height) return 0
+
+  let map = alphaMaps.get(img)
+  if (!map) {
+    const canvas = document.createElement('canvas')
+    canvas.width = img.naturalWidth
+    canvas.height = img.naturalHeight
+    const context = canvas.getContext('2d', { willReadFrequently: true })
+    context.drawImage(img, 0, 0)
+    map = context.getImageData(0, 0, canvas.width, canvas.height)
+    alphaMaps.set(img, map)
+  }
+
+  const px = Math.min(map.width - 1, Math.floor((x / rect.width) * map.width))
+  const py = Math.min(map.height - 1, Math.floor((y / rect.height) * map.height))
+  return map.data[(py * map.width + px) * 4 + 3]
+}
+
+function onBuildingLabel(stage, clientX, clientY) {
+  return [...stage.querySelectorAll('.plot-label')].some((label) => {
+    const rect = label.getBoundingClientRect()
+    return clientX >= rect.left && clientX <= rect.right
+      && clientY >= rect.top && clientY <= rect.bottom
+  })
+}
+
+function buildingAt(stage, clientX, clientY) {
+  if (onBuildingLabel(stage, clientX, clientY)) return null
+
+  const nodes = [...stage.querySelectorAll('.plot')]
+  const ordered = nodes
+    .map((node, index) => ({ node, index }))
+    .sort((a, b) => {
+      const za = Number(getComputedStyle(a.node).zIndex) || 0
+      const zb = Number(getComputedStyle(b.node).zIndex) || 0
+      if (za !== zb) return zb - za
+      return b.index - a.index
+    })
+
+  for (const { node } of ordered) {
+    const img = node.querySelector('.plot-image')
+    if (alphaAt(img, clientX, clientY) > 24) return node
+  }
+
+  return null
+}
+
+function onStagePointerMove(event) {
+  const stage = event.currentTarget
+  if (event.target.closest('.nav-pill, .case-card, .player')) {
+    stage.style.cursor = ''
+    return
+  }
+
+  stage.style.cursor = buildingAt(stage, event.clientX, event.clientY) ? 'pointer' : ''
+}
+
+function onStageClick(event) {
+  if (event.target.closest('.nav-pill, .case-card, .player')) return
+
+  const fromKeyboard = event.detail === 0 ? event.target.closest('.plot') : null
+  const plot = fromKeyboard || buildingAt(event.currentTarget, event.clientX, event.clientY)
+  if (!plot) return
+
+  activeBuildingId.value = plot.dataset.building
+}
 
 const capitalLabel = computed(() => {
   const value = authStore.user?.stats?.capital ?? 1600
@@ -80,6 +165,7 @@ const capitalLabel = computed(() => {
   height: 100dvh;
   display: grid;
   place-items: center;
+  overflow: hidden;
   background: #5f8a0c;
 }
 
@@ -87,19 +173,69 @@ const capitalLabel = computed(() => {
   --inset: 0.42em;
   --stack: 0.7em;
   position: relative;
-  width: min(100vw, calc(100dvh * 16 / 9));
+  width: min(100%, calc(100dvh * 16 / 9));
   aspect-ratio: 16 / 9;
+  overflow: hidden;
   container-type: size;
   font-size: 1.5625cqw;
-  background: url('@/assets/images/game/map.jpg') center / 100% 100% no-repeat;
+  background: url('@/assets/images/game/map.png') center / 100% 100% no-repeat;
 }
 
 .plot {
   position: absolute;
-  height: auto;
-  pointer-events: none;
   z-index: 1;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  appearance: none;
+  pointer-events: none;
+}
+
+.plot-image {
+  display: block;
+  width: 100%;
+  height: auto;
   filter: drop-shadow(0 0.45rem 0.35rem rgba(20, 40, 10, 0.28));
+}
+
+.plot-label {
+  position: absolute;
+  left: 50%;
+  z-index: 2;
+  transform: translate(-50%, 0);
+  padding: 0.42em 0.95em;
+  border-radius: 9999px;
+  background: rgba(42, 49, 56, 0.75);
+  color: #fff;
+  font-size: calc(0.86em - 2px);
+  font-weight: 600;
+  line-height: 1.1;
+  white-space: nowrap;
+  box-shadow: 0 0.28rem 0.55rem rgba(16, 24, 16, 0.28);
+}
+
+.plot-laboratory .plot-label {
+  top: 72.7%;
+}
+
+.plot-factory .plot-label {
+  top: 73.9%;
+}
+
+.plot-office .plot-label {
+  top: 76%;
+}
+
+.plot-accounting .plot-label {
+  top: 73.9%;
+}
+
+.plot-marketing .plot-label {
+  top: 76%;
 }
 
 .plot-laboratory {
@@ -146,7 +282,7 @@ const capitalLabel = computed(() => {
 .nav-pill {
   left: 4.785%;
   top: 3.819%;
-  width: 13.574%;
+  width: 10.43%;
   height: 9.201%;
   border-radius: 9999px;
   display: flex;
@@ -154,6 +290,9 @@ const capitalLabel = computed(() => {
   justify-content: space-between;
   padding: var(--inset);
   gap: var(--stack);
+  color: #1a1f1c;
+  text-decoration: none;
+  cursor: pointer;
 }
 
 .nav-back {
@@ -244,8 +383,9 @@ const capitalLabel = computed(() => {
   border-radius: 9999px;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.65em;
-  padding: var(--inset) 1em var(--inset) var(--inset);
+  padding: var(--inset) 1em;
   color: #121816;
   font-size: 1.05em;
   font-weight: 700;
