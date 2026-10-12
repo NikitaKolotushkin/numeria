@@ -9,10 +9,15 @@
         v-for="plot in plots"
         :key="plot.id"
         class="plot-anchor"
-        :class="[
-          `plot-anchor-${plot.id}`,
-          { 'is-focused': focusedBuildingId === plot.id }
-        ]"
+        :class="{ 'is-focused': focusedBuildingId === plot.id }"
+        :style="{
+          '--plot-width': plot.place.width,
+          '--plot-left': plot.place.left,
+          '--plot-top': plot.place.top,
+          '--plot-base-width': plot.place.baseWidth,
+          '--plot-anchor-foot': plot.place.anchorFoot,
+          '--plot-foot': plot.place.foot
+        }"
       >
         <button
           type="button"
@@ -38,7 +43,7 @@
         }"
         :style="{ '--plaque-x': `${plaquePoint.x}%`, '--plaque-y': `${plaquePoint.y}%` }"
       >
-        <p class="plaque-title">{{ activePlot.title }} (ур. {{ buildingInfo[activePlot.id].level }})</p>
+        <p class="plaque-title">{{ activePlot.title }} (ур. {{ activePlot.level }})</p>
         <p class="plaque-line">
           <strong>Освоение модуля:</strong> {{ buildingInfo[activePlot.id].mastery }}
         </p>
@@ -97,49 +102,153 @@
 <script setup>
 import { computed, nextTick, ref } from 'vue'
 import { useAuthStore } from '@/modules/auth/store/useAuthStore'
-import laboratory from '@/assets/images/game/buildings/01-laboratory/level-1.png'
-import factory from '@/assets/images/game/buildings/02-factory/level-1.png'
-import office from '@/assets/images/game/buildings/03-office/level-1.png'
-import accounting from '@/assets/images/game/buildings/04-accounting/level-1.png'
-import marketing from '@/assets/images/game/buildings/05-marketing/level-1.png'
+
+const buildingSprites = import.meta.glob(
+  '../assets/images/game/buildings/*/*.png',
+  { eager: true, import: 'default' }
+)
+
+const spriteFolders = {
+  laboratory: '01-laboratory',
+  factory: '02-factory',
+  office: '03-office',
+  accounting: '04-accounting',
+  marketing: '05-marketing'
+}
+
+const CANVAS = 1984
+const LEVEL_GROWTH = 0.34
+const LEVEL_MAX_SCALE = 1.5
+
+const buildingLayouts = {
+  laboratory: { width: 27.792, left: 3.604, top: 25.28, anchorFoot: 1442 },
+  factory: { width: 24.498, left: 21.331, top: 61.25, anchorFoot: 1466 },
+  office: { width: 24.228, left: 38.256, top: 28.8, anchorFoot: 1507 },
+  accounting: { width: 23.436, left: 55.012, top: 62.47, anchorFoot: 1467 },
+  marketing: { width: 21.717, left: 72.837, top: 32.17, anchorFoot: 1507 }
+}
+
+const buildingBounds = {
+  laboratory: {
+    1: [582, 1392, 567, 1440],
+    2: [413, 1596, 490, 1509],
+    3: [257, 1759, 393, 1570],
+    4: [178, 1798, 364, 1609],
+    5: [164, 1811, 11, 1618]
+  },
+  factory: {
+    1: [537, 1456, 523, 1466],
+    2: [402, 1568, 413, 1583],
+    3: [190, 1836, 339, 1696],
+    4: [86, 1945, 168, 1780],
+    5: [53, 1822, 15, 1978]
+  },
+  office: {
+    1: [526, 1455, 601, 1506],
+    2: [538, 1456, 524, 1476],
+    3: [581, 1398, 393, 1593],
+    4: [68, 1902, 268, 1834],
+    5: [5, 1925, 44, 1880]
+  },
+  accounting: {
+    1: [511, 1470, 496, 1467],
+    2: [344, 1664, 303, 1628],
+    3: [306, 1706, 243, 1654],
+    4: [212, 1801, 146, 1746],
+    5: [48, 1857, 7, 1829]
+  },
+  marketing: {
+    1: [474, 1509, 467, 1507],
+    2: [150, 1831, 385, 1590],
+    3: [110, 1869, 352, 1743],
+    4: [152, 1831, 207, 1711],
+    5: [3, 1977, 0, 1841]
+  }
+}
+
+function buildingSpan(box) {
+  const [minX, maxX, minY, maxY] = box
+  return {
+    minX,
+    maxX,
+    maxY,
+    width: maxX - minX + 1,
+    height: maxY - minY + 1,
+    center: (minX + maxX) / 2
+  }
+}
+
+function placeBuilding(id, level) {
+  const layout = buildingLayouts[id]
+  const base = buildingSpan(buildingBounds[id][1])
+  const box = buildingSpan(buildingBounds[id][level])
+  const natural = Math.max(box.width / base.width, box.height / base.height)
+  const desired = Math.min(LEVEL_MAX_SCALE, 1 + Math.max(0, natural - 1) * LEVEL_GROWTH)
+  const scale = desired / natural
+  const width = layout.width * scale
+  const anchorCenter = layout.left + layout.width * (base.center / CANVAS)
+  return {
+    width,
+    left: anchorCenter - width * (box.center / CANVAS),
+    top: layout.top,
+    baseWidth: layout.width,
+    anchorFoot: layout.anchorFoot,
+    foot: level === 1 ? layout.anchorFoot : box.maxY
+  }
+}
+
+function spriteSrc(id, level) {
+  const folder = spriteFolders[id]
+  const entry = Object.entries(buildingSprites).find(([path]) =>
+    path.endsWith(`/${folder}/level-${level}.png`)
+  )
+  return entry ? entry[1] : ''
+}
+
+function rollLevel() {
+  return 1 + Math.floor(Math.random() * 5)
+}
 
 const authStore = useAuthStore()
 
 const plots = [
-  { id: 'laboratory', title: 'Лаборатория', src: laboratory },
-  { id: 'factory', title: 'Завод', src: factory },
-  { id: 'office', title: 'Офис', src: office },
-  { id: 'accounting', title: 'Бухгалтерия', src: accounting },
-  { id: 'marketing', title: 'Маркетинг', src: marketing }
-]
+  { id: 'laboratory', title: 'Лаборатория' },
+  { id: 'factory', title: 'Завод' },
+  { id: 'office', title: 'Офис' },
+  { id: 'accounting', title: 'Бухгалтерия' },
+  { id: 'marketing', title: 'Маркетинг' }
+].map((plot) => {
+  const level = rollLevel()
+  return {
+    ...plot,
+    level,
+    place: placeBuilding(plot.id, level),
+    src: spriteSrc(plot.id, level)
+  }
+})
 
 const buildingInfo = {
   laboratory: {
-    level: 1,
     mastery: '2 / 5 тем',
     topic: 'Анализ спроса',
     upgrade: 'Решить кейс «Эластичность цены»'
   },
   factory: {
-    level: 1,
     mastery: '3 / 5 тем',
     topic: 'Себестоимость продукции',
     upgrade: 'Решить кейс «Точка безубыточности»'
   },
   office: {
-    level: 1,
     mastery: '1 / 5 тем',
     topic: 'Организационная структура',
     upgrade: 'Решить кейс «Делегирование»'
   },
   accounting: {
-    level: 1,
     mastery: '4 / 5 тем',
     topic: 'Метод двойной записи',
     upgrade: 'Решить кейс «План счетов»'
   },
   marketing: {
-    level: 1,
     mastery: '2 / 5 тем',
     topic: 'Целевая аудитория',
     upgrade: 'Решить кейс «Позиционирование»'
@@ -384,6 +493,13 @@ const capitalLabel = computed(() => {
 .plot-anchor {
   position: absolute;
   pointer-events: none;
+  width: calc(var(--plot-width) * 1%);
+  left: calc(var(--plot-left) * 1%);
+  top: calc(
+    var(--plot-top) * 1cqh
+    + (var(--plot-base-width) * var(--plot-anchor-foot) / 1984) * (16 / 9) * 1cqh
+    - (var(--plot-width) * var(--plot-foot) / 1984) * 1cqw
+  );
 }
 
 .plot-anchor.is-focused {
@@ -445,67 +561,13 @@ const capitalLabel = computed(() => {
   font-weight: 600;
   line-height: 1.1;
   white-space: nowrap;
+  top: calc(var(--plot-foot) / 1984 * 100%);
   box-shadow: 0 0.28rem 0.55rem rgba(16, 24, 16, 0.28);
-}
-
-.plot-laboratory .plot-label {
-  top: 72.7%;
-}
-
-.plot-factory .plot-label {
-  top: 73.9%;
-}
-
-.plot-office .plot-label {
-  top: 76%;
-}
-
-.plot-accounting .plot-label {
-  top: 73.9%;
-}
-
-.plot-marketing .plot-label {
-  top: 76%;
 }
 
 .plot-factory,
 .plot-accounting {
   z-index: 2;
-}
-
-.plot-anchor-laboratory {
-  --plot-image-height: calc(27.792cqw * 1442 / 1984);
-  width: 27.792%;
-  left: 3.604%;
-  top: calc(25.28cqh + (27.792cqh * 1442 / 1984) * (16 / 9) - (27.792cqw * 1442 / 1984));
-}
-
-.plot-anchor-factory {
-  --plot-image-height: calc(24.498cqw * 1466 / 1984);
-  width: 24.498%;
-  left: 21.331%;
-  top: calc(61.25cqh + (24.498cqh * 1466 / 1984) * (16 / 9) - (24.498cqw * 1466 / 1984));
-}
-
-.plot-anchor-office {
-  --plot-image-height: calc(24.228cqw * 1507 / 1984);
-  width: 24.228%;
-  left: 38.256%;
-  top: calc(28.8cqh + (24.228cqh * 1507 / 1984) * (16 / 9) - (24.228cqw * 1507 / 1984));
-}
-
-.plot-anchor-accounting {
-  --plot-image-height: calc(23.436cqw * 1467 / 1984);
-  width: 23.436%;
-  left: 55.012%;
-  top: calc(62.47cqh + (23.436cqh * 1467 / 1984) * (16 / 9) - (23.436cqw * 1467 / 1984));
-}
-
-.plot-anchor-marketing {
-  --plot-image-height: calc(21.717cqw * 1507 / 1984);
-  width: 21.717%;
-  left: 72.837%;
-  top: calc(32.17cqh + (21.717cqh * 1507 / 1984) * (16 / 9) - (21.717cqw * 1507 / 1984));
 }
 
 .plaque {
