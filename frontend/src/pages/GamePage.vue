@@ -5,19 +5,47 @@
       @click="onStageClick"
       @pointermove="onStagePointerMove"
     >
-      <button
+      <div
         v-for="plot in plots"
         :key="plot.id"
-        type="button"
-        class="plot"
-        :class="`plot-${plot.id}`"
-        :data-building="plot.id"
-        :aria-pressed="activeBuildingId === plot.id"
-        :aria-label="plot.title"
+        class="plot-anchor"
+        :class="`plot-anchor-${plot.id}`"
       >
-        <img class="plot-image" :src="plot.src" alt="" />
-        <span class="plot-label">{{ plot.title }}</span>
-      </button>
+        <button
+          type="button"
+          class="plot"
+          :class="`plot-${plot.id}`"
+          :data-building="plot.id"
+          :aria-pressed="activeBuildingId === plot.id"
+          :aria-label="plot.title"
+        >
+          <img class="plot-image" :src="plot.src" alt="" />
+          <span class="plot-label">{{ plot.title }}</span>
+        </button>
+      </div>
+
+      <aside
+        v-if="activePlot && plaquePoint"
+        ref="plaqueEl"
+        class="plaque"
+        :class="{
+          'plaque-left': plaquePlacement.horizontal === 'left',
+          'plaque-up': plaquePlacement.vertical === 'up',
+          'plaque-measuring': !plaqueReady
+        }"
+        :style="{ '--plaque-x': `${plaquePoint.x}%`, '--plaque-y': `${plaquePoint.y}%` }"
+      >
+        <p class="plaque-title">{{ activePlot.title }} (ур. {{ buildingInfo[activePlot.id].level }})</p>
+        <p class="plaque-line">
+          <strong>Освоение модуля:</strong> {{ buildingInfo[activePlot.id].mastery }}
+        </p>
+        <p class="plaque-line">
+          <strong>Текущая тема:</strong> {{ buildingInfo[activePlot.id].topic }}
+        </p>
+        <p class="plaque-line">
+          <strong>Для апгрейда:</strong> {{ buildingInfo[activePlot.id].upgrade }}
+        </p>
+      </aside>
 
       <router-link to="/" class="nav-pill" aria-label="Назад">
         <span class="nav-back" aria-hidden="true">
@@ -57,7 +85,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useAuthStore } from '@/modules/auth/store/useAuthStore'
 import laboratory from '@/assets/images/game/buildings/01-laboratory/level-1.png'
 import factory from '@/assets/images/game/buildings/02-factory/level-1.png'
@@ -75,10 +103,57 @@ const plots = [
   { id: 'marketing', title: 'Маркетинг', src: marketing }
 ]
 
+const buildingInfo = {
+  laboratory: {
+    level: 1,
+    mastery: '2 / 5 тем',
+    topic: 'Анализ спроса',
+    upgrade: 'Решить кейс «Эластичность цены»'
+  },
+  factory: {
+    level: 1,
+    mastery: '3 / 5 тем',
+    topic: 'Себестоимость продукции',
+    upgrade: 'Решить кейс «Точка безубыточности»'
+  },
+  office: {
+    level: 1,
+    mastery: '1 / 5 тем',
+    topic: 'Организационная структура',
+    upgrade: 'Решить кейс «Делегирование»'
+  },
+  accounting: {
+    level: 1,
+    mastery: '4 / 5 тем',
+    topic: 'Метод двойной записи',
+    upgrade: 'Решить кейс «План счетов»'
+  },
+  marketing: {
+    level: 1,
+    mastery: '2 / 5 тем',
+    topic: 'Целевая аудитория',
+    upgrade: 'Решить кейс «Позиционирование»'
+  }
+}
+
 const activeBuildingId = ref(null)
+const plaquePoint = ref(null)
+const plaqueEl = ref(null)
+const plaqueReady = ref(false)
+const plaquePlacement = ref({ horizontal: 'right', vertical: 'down' })
 const alphaMaps = new WeakMap()
+let plaquePlaceToken = 0
 
 const playerName = computed(() => authStore.user?.firstName || 'Линад')
+const activePlot = computed(() => plots.find((plot) => plot.id === activeBuildingId.value) || null)
+
+function pointOnStage(stage, clientX, clientY) {
+  const rect = stage.getBoundingClientRect()
+  return {
+    x: ((clientX - rect.left) / rect.width) * 100,
+    y: ((clientY - rect.top) / rect.height) * 100
+  }
+}
 
 function alphaAt(img, clientX, clientY) {
   if (!img?.complete || !img.naturalWidth) return 0
@@ -135,7 +210,7 @@ function buildingAt(stage, clientX, clientY) {
 
 function onStagePointerMove(event) {
   const stage = event.currentTarget
-  if (event.target.closest('.nav-pill, .case-card, .player')) {
+  if (event.target.closest('.nav-pill, .case-card, .player, .plaque')) {
     stage.style.cursor = ''
     return
   }
@@ -143,14 +218,66 @@ function onStagePointerMove(event) {
   stage.style.cursor = buildingAt(stage, event.clientX, event.clientY) ? 'pointer' : ''
 }
 
+function closePlaque() {
+  plaquePlaceToken += 1
+  activeBuildingId.value = null
+  plaquePoint.value = null
+  plaqueReady.value = false
+}
+
+function preferredPlacement(buildingId) {
+  return {
+    horizontal: buildingId === 'marketing' ? 'left' : 'right',
+    vertical: 'down'
+  }
+}
+
+function fitPlaqueToScreen(stage) {
+  const plaque = plaqueEl.value
+  if (!plaque) return
+
+  const bounds = stage.getBoundingClientRect()
+  const rect = plaque.getBoundingClientRect()
+  const next = { ...plaquePlacement.value }
+
+  if (next.vertical === 'down' && rect.bottom > bounds.bottom) next.vertical = 'up'
+  if (next.horizontal === 'right' && rect.right > bounds.right) next.horizontal = 'left'
+  if (next.horizontal === 'left' && rect.left < bounds.left) next.horizontal = 'right'
+
+  plaquePlacement.value = next
+}
+
+async function openPlaque(stage, clientX, clientY, buildingId) {
+  const token = ++plaquePlaceToken
+  activeBuildingId.value = buildingId
+  plaquePoint.value = pointOnStage(stage, clientX, clientY)
+  plaquePlacement.value = preferredPlacement(buildingId)
+  plaqueReady.value = false
+  await nextTick()
+  if (token !== plaquePlaceToken || !plaqueEl.value) return
+  fitPlaqueToScreen(stage)
+  plaqueReady.value = true
+}
+
 function onStageClick(event) {
-  if (event.target.closest('.nav-pill, .case-card, .player')) return
+  if (event.target.closest('.nav-pill, .case-card, .player, .plaque')) return
 
+  const stage = event.currentTarget
   const fromKeyboard = event.detail === 0 ? event.target.closest('.plot') : null
-  const plot = fromKeyboard || buildingAt(event.currentTarget, event.clientX, event.clientY)
-  if (!plot) return
+  const plot = fromKeyboard || buildingAt(stage, event.clientX, event.clientY)
+  if (!plot) {
+    closePlaque()
+    return
+  }
 
-  activeBuildingId.value = plot.dataset.building
+  if (fromKeyboard) {
+    const image = plot.querySelector('.plot-image')
+    const rect = image.getBoundingClientRect()
+    openPlaque(stage, rect.left + rect.width / 2, rect.top + rect.height * 0.4, plot.dataset.building)
+    return
+  }
+
+  openPlaque(stage, event.clientX, event.clientY, plot.dataset.building)
 }
 
 const capitalLabel = computed(() => {
@@ -179,9 +306,16 @@ const capitalLabel = computed(() => {
   background: url('@/assets/images/game/map.png') center / 100% 100% no-repeat;
 }
 
-.plot {
+.plot-anchor {
   position: absolute;
+  pointer-events: none;
+}
+
+.plot {
+  position: relative;
   z-index: 1;
+  display: block;
+  width: 100%;
   margin: 0;
   padding: 0;
   border: 0;
@@ -236,36 +370,108 @@ const capitalLabel = computed(() => {
   top: 76%;
 }
 
-.plot-laboratory {
+.plot-factory,
+.plot-accounting {
+  z-index: 2;
+}
+
+.plot-anchor-laboratory {
+  --plot-image-height: calc(30.88cqw * 1442 / 1984);
   width: 30.88%;
   left: 2.06%;
   top: calc(21.29cqh + (30.88cqh * 1442 / 1984) * (16 / 9) - (30.88cqw * 1442 / 1984));
 }
 
-.plot-factory {
-  z-index: 2;
+.plot-anchor-factory {
+  --plot-image-height: calc(27.22cqw * 1466 / 1984);
   width: 27.22%;
   left: 19.97%;
   top: calc(57.67cqh + (27.22cqh * 1466 / 1984) * (16 / 9) - (27.22cqw * 1466 / 1984));
 }
 
-.plot-office {
+.plot-anchor-office {
+  --plot-image-height: calc(26.92cqw * 1507 / 1984);
   width: 26.92%;
   left: 36.91%;
   top: calc(25.16cqh + (26.92cqh * 1507 / 1984) * (16 / 9) - (26.92cqw * 1507 / 1984));
 }
 
-.plot-accounting {
-  z-index: 2;
+.plot-anchor-accounting {
+  --plot-image-height: calc(26.04cqw * 1467 / 1984);
   width: 26.04%;
   left: 53.71%;
   top: calc(59.05cqh + (26.04cqh * 1467 / 1984) * (16 / 9) - (26.04cqw * 1467 / 1984));
 }
 
-.plot-marketing {
+.plot-anchor-marketing {
+  --plot-image-height: calc(24.13cqw * 1507 / 1984);
   width: 24.13%;
   left: 71.63%;
   top: calc(28.91cqh + (24.13cqh * 1507 / 1984) * (16 / 9) - (24.13cqw * 1507 / 1984));
+}
+
+.plaque {
+  position: absolute;
+  z-index: 4;
+  left: var(--plaque-x);
+  top: var(--plaque-y);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1em;
+  width: max-content;
+  margin: 0;
+  padding: 0.78em 1.02em 0.86em;
+  border-radius: 0.7em;
+  border-top-left-radius: 0;
+  background: #3e5964;
+  color: #fff;
+  pointer-events: auto;
+  cursor: default;
+  white-space: nowrap;
+  box-shadow: 0 0.4em 1em rgba(16, 28, 32, 0.28);
+}
+
+.plaque-measuring {
+  visibility: hidden;
+}
+
+.plaque-left {
+  transform: translateX(-100%);
+  border-top-left-radius: 0.7em;
+  border-top-right-radius: 0;
+}
+
+.plaque-up {
+  transform: translateY(-100%);
+  border-top-left-radius: 0.7em;
+  border-bottom-left-radius: 0;
+}
+
+.plaque-left.plaque-up {
+  transform: translate(-100%, -100%);
+  border-top-left-radius: 0.7em;
+  border-top-right-radius: 0.7em;
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0.7em;
+}
+
+.plaque-title {
+  margin: 0 0 0.28em;
+  font-size: 1.12em;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.plaque-line {
+  margin: 0;
+  font-size: 0.86em;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.plaque-line strong {
+  font-weight: 700;
 }
 
 .nav-pill,
