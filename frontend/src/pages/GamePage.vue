@@ -474,38 +474,38 @@ const capitalLabel = computed(() => {
 }
 
 .plot-anchor-laboratory {
-  --plot-image-height: calc(30.88cqw * 1442 / 1984);
-  width: 30.88%;
-  left: 2.06%;
-  top: calc(21.29cqh + (30.88cqh * 1442 / 1984) * (16 / 9) - (30.88cqw * 1442 / 1984));
+  --plot-image-height: calc(27.792cqw * 1442 / 1984);
+  width: 27.792%;
+  left: 3.604%;
+  top: calc(25.28cqh + (27.792cqh * 1442 / 1984) * (16 / 9) - (27.792cqw * 1442 / 1984));
 }
 
 .plot-anchor-factory {
-  --plot-image-height: calc(27.22cqw * 1466 / 1984);
-  width: 27.22%;
-  left: 19.97%;
-  top: calc(57.67cqh + (27.22cqh * 1466 / 1984) * (16 / 9) - (27.22cqw * 1466 / 1984));
+  --plot-image-height: calc(24.498cqw * 1466 / 1984);
+  width: 24.498%;
+  left: 21.331%;
+  top: calc(61.25cqh + (24.498cqh * 1466 / 1984) * (16 / 9) - (24.498cqw * 1466 / 1984));
 }
 
 .plot-anchor-office {
-  --plot-image-height: calc(26.92cqw * 1507 / 1984);
-  width: 26.92%;
-  left: 36.91%;
-  top: calc(25.16cqh + (26.92cqh * 1507 / 1984) * (16 / 9) - (26.92cqw * 1507 / 1984));
+  --plot-image-height: calc(24.228cqw * 1507 / 1984);
+  width: 24.228%;
+  left: 38.256%;
+  top: calc(28.8cqh + (24.228cqh * 1507 / 1984) * (16 / 9) - (24.228cqw * 1507 / 1984));
 }
 
 .plot-anchor-accounting {
-  --plot-image-height: calc(26.04cqw * 1467 / 1984);
-  width: 26.04%;
-  left: 53.71%;
-  top: calc(59.05cqh + (26.04cqh * 1467 / 1984) * (16 / 9) - (26.04cqw * 1467 / 1984));
+  --plot-image-height: calc(23.436cqw * 1467 / 1984);
+  width: 23.436%;
+  left: 55.012%;
+  top: calc(62.47cqh + (23.436cqh * 1467 / 1984) * (16 / 9) - (23.436cqw * 1467 / 1984));
 }
 
 .plot-anchor-marketing {
-  --plot-image-height: calc(24.13cqw * 1507 / 1984);
-  width: 24.13%;
-  left: 71.63%;
-  top: calc(28.91cqh + (24.13cqh * 1507 / 1984) * (16 / 9) - (24.13cqw * 1507 / 1984));
+  --plot-image-height: calc(21.717cqw * 1507 / 1984);
+  width: 21.717%;
+  left: 72.837%;
+  top: calc(32.17cqh + (21.717cqh * 1507 / 1984) * (16 / 9) - (21.717cqw * 1507 / 1984));
 }
 
 .plaque {
