@@ -1,18 +1,7 @@
 <template>
   <div class="wizard-container">
     <header class="wizard-header">
-      <button
-        type="button"
-        class="btn-nav btn-pill"
-        aria-label="Назад"
-        @click="$emit('prev')"
-      >
-        <svg class="nav-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="19" y1="12" x2="5" y2="12"></line>
-          <polyline points="12 19 5 12 12 5"></polyline>
-        </svg>
-        <img class="brand-mark" src="@/assets/images/auth/logo-mark.png" alt="" />
-      </button>
+      <BackPill @click="$emit('prev')" />
 
       <div class="badge-pill">
         {{ headerTitle }}
@@ -43,6 +32,8 @@
 </template>
 
 <script setup>
+import BackPill from '@/shared/ui/BackPill.vue'
+
 defineProps({
   title: { type: String, required: true },
   headerTitle: { type: String, default: 'Узнаем немного' },
@@ -95,20 +86,6 @@ defineEmits(['prev', 'next'])
 .btn-nav:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-.btn-pill {
-  border-radius: 9999px;
-  padding: 0 1.05rem 0 0.9rem;
-  gap: 0.7rem;
-}
-
-.brand-mark {
-  width: 1.85rem;
-  height: 1.85rem;
-  display: block;
-  object-fit: contain;
-  border-radius: 0.55rem;
 }
 
 .btn-circle {

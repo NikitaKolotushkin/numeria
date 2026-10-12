@@ -55,21 +55,7 @@
         </p>
       </aside>
 
-      <router-link to="/" class="nav-pill" aria-label="Назад">
-        <span class="nav-back" aria-hidden="true">
-          <svg viewBox="0 0 24 24">
-            <path
-              d="M14.5 5.5 8 12l6.5 6.5"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.4"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </span>
-        <img class="nav-mark" src="@/assets/images/auth/logo-mark.png" alt="" />
-      </router-link>
+      <BackPill to="/" class="game-back" />
 
       <section class="case-card">
         <h1 class="case-title">Кейс 2. Блок 3</h1>
@@ -102,6 +88,7 @@
 <script setup>
 import { computed, nextTick, ref } from 'vue'
 import { useAuthStore } from '@/modules/auth/store/useAuthStore'
+import BackPill from '@/shared/ui/BackPill.vue'
 
 const buildingSprites = import.meta.glob(
   '../assets/images/game/buildings/*/*.png',
@@ -359,7 +346,7 @@ function buildingAt(stage, clientX, clientY) {
 
 function onStagePointerMove(event) {
   const stage = event.currentTarget
-  if (event.target.closest('.nav-pill, .case-card, .player, .plaque')) {
+  if (event.target.closest('.game-back, .case-card, .player, .plaque')) {
     stage.style.cursor = ''
     return
   }
@@ -440,7 +427,7 @@ async function openPlaque(stage, clientX, clientY, buildingId) {
 }
 
 function onStageClick(event) {
-  if (event.target.closest('.nav-pill, .case-card, .player, .plaque')) return
+  if (event.target.closest('.game-back, .case-card, .player, .plaque')) return
 
   const stage = event.currentTarget
   const fromKeyboard = event.detail === 0 ? event.target.closest('.plot') : null
@@ -475,8 +462,6 @@ const capitalLabel = computed(() => {
 }
 
 .stage {
-  --inset: 0.42em;
-  --stack: 0.7em;
   position: relative;
   width: 100%;
   height: 100%;
@@ -631,142 +616,107 @@ const capitalLabel = computed(() => {
   font-weight: 700;
 }
 
-.nav-pill,
-.case-card,
-.player-pill {
+.game-back {
   position: absolute;
   z-index: 3;
-  background: #fff;
-  box-shadow: 0 0.35rem 0.9rem rgba(16, 32, 16, 0.16);
-}
-
-.nav-pill {
   left: 4.785%;
   top: 3.819%;
-  width: 10.43%;
-  height: 9.201%;
-  border-radius: 9999px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--inset);
-  gap: var(--stack);
-  color: #1a1f1c;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.nav-back {
-  flex: 0 0 1.35em;
-  width: 1.35em;
-  height: 1.35em;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: #1a1f1c;
-  cursor: pointer;
-  text-decoration: none;
-}
-
-.nav-back svg {
-  width: 100%;
-  height: 100%;
-}
-
-.nav-mark {
-  width: calc(9.201cqh - (var(--inset) * 2));
-  height: calc(9.201cqh - (var(--inset) * 2));
-  flex: 0 0 auto;
-  display: block;
 }
 
 .case-card {
-  left: 32.52%;
+  position: absolute;
+  z-index: 3;
+  left: 50%;
   top: 3.819%;
-  width: 35.059%;
-  height: 23.958%;
-  border-radius: 1.25em;
+  transform: translateX(-50%);
+  width: min(28rem, 34%);
+  min-height: clamp(12.5rem, 26vh, 18rem);
+  border-radius: clamp(1.75rem, 2.4vw, 2.5rem);
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 0.75em;
-  padding: 1.05em 1.45em;
+  justify-content: flex-start;
+  gap: clamp(0.45rem, 1vh, 0.7rem);
+  padding: clamp(1.6rem, 3vmin, 2.4rem) clamp(2rem, 3vw, 2.8rem);
+  background: #ffffff;
+  box-shadow: 0 1.25rem 3rem rgba(18, 32, 43, 0.14);
+  color: #12202b;
 }
 
 .case-title {
   margin: 0;
-  color: #0e191b;
-  font-size: 1.25em;
+  color: #12202b;
+  font-size: clamp(1.2rem, 1.55vw, 1.5rem);
   font-weight: 700;
   line-height: 1.2;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  text-align: center;
 }
 
 .case-subtitle {
   margin: 0;
-  color: #66727a;
-  font-size: 0.95em;
-  font-weight: 500;
+  color: #12202b;
+  font-size: clamp(0.95rem, 1.15vw, 1.125rem);
+  font-weight: 400;
   line-height: 1.25;
+  text-align: center;
 }
 
 .case-next {
-  margin-top: 0.2em;
-  background: #002126;
-  color: #fff;
-  border: 0;
+  margin-top: auto;
+  min-width: 8.5rem;
+  height: clamp(2.55rem, 5.6vh, 2.9rem);
+  padding: 0 1.75rem;
+  border: none;
   border-radius: 9999px;
-  padding: 0.55em 1.45em;
-  font-size: 0.9em;
-  font-weight: 700;
+  background: #061e27;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 500;
   line-height: 1;
   font-family: inherit;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .player {
   position: absolute;
   z-index: 3;
-  left: 78.32%;
+  right: 4.785%;
   top: 3.819%;
-  width: 16.992%;
-  display: flex;
-  flex-direction: column;
-  gap: 0.7em;
+  display: grid;
+  gap: 0.7rem;
 }
 
 .player-pill {
-  position: relative;
-  height: 9.201cqh;
+  height: clamp(2.85rem, 6.2vh, 3.35rem);
+  background: #ffffff;
+  box-shadow: 0 0.3rem 1rem rgba(18, 32, 43, 0.08);
   border-radius: 9999px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.65em;
-  padding: var(--inset) 1em;
-  color: #121816;
-  font-size: 1.05em;
-  font-weight: 700;
+  gap: 0.7rem;
+  padding: 0 1.05rem 0 0.9rem;
+  color: #12202b;
+  font-size: clamp(0.95rem, 1.15vw, 1.125rem);
+  font-weight: 500;
   line-height: 1;
+  white-space: nowrap;
 }
 
 .player-avatar,
 .player-coin {
-  width: calc(9.201cqh - (var(--inset) * 2));
-  height: calc(9.201cqh - (var(--inset) * 2));
+  width: 1.85rem;
+  height: 1.85rem;
   flex-shrink: 0;
   display: block;
+  object-fit: contain;
+  border-radius: 0.55rem;
 }
 
 .player-avatar {
-  border-radius: 0.45em;
   object-fit: cover;
-}
-
-.player-coin {
-  object-fit: contain;
 }
 </style>
