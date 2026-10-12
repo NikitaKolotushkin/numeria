@@ -60,7 +60,7 @@
       <section class="case-card">
         <h1 class="case-title">Кейс 2. Блок 3</h1>
         <p class="case-subtitle">Затраты предприятия</p>
-        <button type="button" class="case-next">Вперед!</button>
+        <button type="button" class="case-next" @click="openCase">Вперед!</button>
       </section>
 
       <aside class="player">
@@ -81,6 +81,28 @@
         aria-hidden="true"
         @transitionend="onBlurTransitionEnd"
       ></div>
+
+      <div
+        v-if="caseOpen"
+        class="case-overlay"
+        @click.stop
+        @pointermove.stop
+      >
+        <div class="case-overlay-panel">
+          <AuthWizardLayout
+            title="Затраты предприятия"
+            header-title="Кейс 2. Блок 3"
+            @prev="closeCase"
+          >
+            <template #header-end>
+              <div class="player-pill">
+                <img class="player-avatar" src="@/assets/images/hub/avatar.png" alt="" />
+                <span>{{ playerName }}</span>
+              </div>
+            </template>
+          </AuthWizardLayout>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -88,6 +110,7 @@
 <script setup>
 import { computed, nextTick, ref } from 'vue'
 import { useAuthStore } from '@/modules/auth/store/useAuthStore'
+import AuthWizardLayout from '@/modules/auth/components/AuthWizardLayout.vue'
 import BackPill from '@/shared/ui/BackPill.vue'
 
 const buildingSprites = import.meta.glob(
@@ -239,6 +262,7 @@ const buildingInfo = {
 }
 
 const activeBuildingId = ref(null)
+const caseOpen = ref(false)
 const plaquePoint = ref(null)
 const plaqueEl = ref(null)
 const plaqueReady = ref(false)
@@ -344,7 +368,25 @@ function buildingAt(stage, clientX, clientY) {
   return null
 }
 
+function openCase() {
+  pendingOpen = null
+  plaquePlaceToken += 1
+  activeBuildingId.value = null
+  plaquePoint.value = null
+  plaqueReady.value = false
+  focusedBuildingId.value = null
+  caseOpen.value = true
+  blurActive.value = true
+}
+
+function closeCase() {
+  caseOpen.value = false
+  blurActive.value = false
+}
+
 function onStagePointerMove(event) {
+  if (caseOpen.value) return
+
   const stage = event.currentTarget
   if (event.target.closest('.game-back, .case-card, .player, .plaque')) {
     stage.style.cursor = ''
@@ -427,6 +469,7 @@ async function openPlaque(stage, clientX, clientY, buildingId) {
 }
 
 function onStageClick(event) {
+  if (caseOpen.value) return
   if (event.target.closest('.game-back, .case-card, .player, .plaque')) return
 
   const stage = event.currentTarget
@@ -504,6 +547,21 @@ const capitalLabel = computed(() => {
   background-color: rgb(0 0 0 / 1%);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+}
+
+.case-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(1rem, 4vh, 2rem) clamp(1.25rem, 3vw, 2rem);
+  font-size: clamp(16px, 1.8vmin, 20px);
+}
+
+.case-overlay-panel {
+  width: min(88vw, 74rem);
 }
 
 .plot {
@@ -704,6 +762,7 @@ const capitalLabel = computed(() => {
   font-weight: 500;
   line-height: 1;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .player-avatar,
