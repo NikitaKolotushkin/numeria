@@ -9,7 +9,10 @@
         v-for="plot in plots"
         :key="plot.id"
         class="plot-anchor"
-        :class="`plot-anchor-${plot.id}`"
+        :class="[
+          `plot-anchor-${plot.id}`,
+          { 'is-focused': focusedBuildingId === plot.id }
+        ]"
       >
         <button
           type="button"
@@ -80,6 +83,13 @@
           <span>{{ capitalLabel }}</span>
         </div>
       </aside>
+
+      <div
+        class="stage-blur"
+        :class="{ 'is-active': blurActive }"
+        aria-hidden="true"
+        @transitionend="onBlurTransitionEnd"
+      ></div>
     </div>
   </div>
 </template>
@@ -140,9 +150,12 @@ const activeBuildingId = ref(null)
 const plaquePoint = ref(null)
 const plaqueEl = ref(null)
 const plaqueReady = ref(false)
+const blurActive = ref(false)
+const focusedBuildingId = ref(null)
 const plaquePlacement = ref({ horizontal: 'right', vertical: 'down' })
 const alphaMaps = new WeakMap()
 let plaquePlaceToken = 0
+let pendingOpen = null
 
 const playerName = computed(() => authStore.user?.firstName || 'Линад')
 const activePlot = computed(() => plots.find((plot) => plot.id === activeBuildingId.value) || null)
@@ -155,13 +168,8 @@ function pointOnStage(stage, clientX, clientY) {
   }
 }
 
-function alphaAt(img, clientX, clientY) {
-  if (!img?.complete || !img.naturalWidth) return 0
-
-  const rect = img.getBoundingClientRect()
-  const x = clientX - rect.left
-  const y = clientY - rect.top
-  if (x < 0 || y < 0 || x >= rect.width || y >= rect.height) return 0
+function imageAlphaMap(img) {
+  if (!img?.complete || !img.naturalWidth) return null
 
   let map = alphaMaps.get(img)
   if (!map) {
@@ -174,9 +182,45 @@ function alphaAt(img, clientX, clientY) {
     alphaMaps.set(img, map)
   }
 
+  return map
+}
+
+function alphaAt(img, clientX, clientY) {
+  const map = imageAlphaMap(img)
+  if (!map) return 0
+
+  const rect = img.getBoundingClientRect()
+  const x = clientX - rect.left
+  const y = clientY - rect.top
+  if (x < 0 || y < 0 || x >= rect.width || y >= rect.height) return 0
+
   const px = Math.min(map.width - 1, Math.floor((x / rect.width) * map.width))
   const py = Math.min(map.height - 1, Math.floor((y / rect.height) * map.height))
   return map.data[(py * map.width + px) * 4 + 3]
+}
+
+const opaqueCenterXByImage = new WeakMap()
+
+function buildingCenterClientX(img) {
+  const rect = img.getBoundingClientRect()
+  const map = imageAlphaMap(img)
+  if (!map) return rect.left + rect.width / 2
+
+  let center = opaqueCenterXByImage.get(img)
+  if (center == null) {
+    let minX = map.width
+    let maxX = -1
+    for (let index = 0; index < map.width * map.height; index += 1) {
+      if (map.data[index * 4 + 3] <= 24) continue
+      const x = index % map.width
+      if (x < minX) minX = x
+      if (x > maxX) maxX = x
+    }
+    center = maxX < 0 ? map.width / 2 : (minX + maxX) / 2
+    opaqueCenterXByImage.set(img, center)
+  }
+
+  return rect.left + (center / img.naturalWidth) * rect.width
 }
 
 function onBuildingLabel(stage, clientX, clientY) {
@@ -218,16 +262,45 @@ function onStagePointerMove(event) {
   stage.style.cursor = buildingAt(stage, event.clientX, event.clientY) ? 'pointer' : ''
 }
 
-function closePlaque() {
+function onBlurTransitionEnd(event) {
+  if (event.propertyName !== 'backdrop-filter' && event.propertyName !== '-webkit-backdrop-filter') return
+  if (blurActive.value) return
+
+  const next = pendingOpen
+  pendingOpen = null
+  focusedBuildingId.value = null
+  if (next) openPlaque(next.stage, next.clientX, next.clientY, next.buildingId)
+}
+
+function closePlaque({ keepPending = false } = {}) {
+  if (!keepPending) pendingOpen = null
   plaquePlaceToken += 1
   activeBuildingId.value = null
   plaquePoint.value = null
   plaqueReady.value = false
+  const blurWasOn = blurActive.value
+  blurActive.value = false
+  if (!blurWasOn) focusedBuildingId.value = null
 }
 
-function preferredPlacement(buildingId) {
+function requestPlaque(stage, clientX, clientY, buildingId) {
+  const blurEngaged = blurActive.value || focusedBuildingId.value !== null
+  if (blurEngaged && activeBuildingId.value !== buildingId) {
+    pendingOpen = { stage, clientX, clientY, buildingId }
+    if (blurActive.value) closePlaque({ keepPending: true })
+    return
+  }
+
+  pendingOpen = null
+  openPlaque(stage, clientX, clientY, buildingId)
+}
+
+function preferredPlacement(stage, clientX, buildingId) {
+  const image = stage.querySelector(`.plot[data-building="${buildingId}"] .plot-image`)
+  const horizontal = image && clientX < buildingCenterClientX(image) ? 'left' : 'right'
+
   return {
-    horizontal: buildingId === 'marketing' ? 'left' : 'right',
+    horizontal,
     vertical: 'down'
   }
 }
@@ -251,12 +324,14 @@ async function openPlaque(stage, clientX, clientY, buildingId) {
   const token = ++plaquePlaceToken
   activeBuildingId.value = buildingId
   plaquePoint.value = pointOnStage(stage, clientX, clientY)
-  plaquePlacement.value = preferredPlacement(buildingId)
+  plaquePlacement.value = preferredPlacement(stage, clientX, buildingId)
   plaqueReady.value = false
   await nextTick()
   if (token !== plaquePlaceToken || !plaqueEl.value) return
   fitPlaqueToScreen(stage)
+  focusedBuildingId.value = buildingId
   plaqueReady.value = true
+  blurActive.value = true
 }
 
 function onStageClick(event) {
@@ -273,11 +348,11 @@ function onStageClick(event) {
   if (fromKeyboard) {
     const image = plot.querySelector('.plot-image')
     const rect = image.getBoundingClientRect()
-    openPlaque(stage, rect.left + rect.width / 2, rect.top + rect.height * 0.4, plot.dataset.building)
+    requestPlaque(stage, rect.left + rect.width / 2, rect.top + rect.height * 0.4, plot.dataset.building)
     return
   }
 
-  openPlaque(stage, event.clientX, event.clientY, plot.dataset.building)
+  requestPlaque(stage, event.clientX, event.clientY, plot.dataset.building)
 }
 
 const capitalLabel = computed(() => {
@@ -309,6 +384,29 @@ const capitalLabel = computed(() => {
 .plot-anchor {
   position: absolute;
   pointer-events: none;
+}
+
+.plot-anchor.is-focused {
+  z-index: 6;
+}
+
+.stage-blur {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background-color: transparent;
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
+  transition:
+    backdrop-filter 0.4s ease,
+    -webkit-backdrop-filter 0.4s ease;
+}
+
+.stage-blur.is-active {
+  background-color: rgb(0 0 0 / 1%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .plot {
@@ -412,7 +510,7 @@ const capitalLabel = computed(() => {
 
 .plaque {
   position: absolute;
-  z-index: 4;
+  z-index: 7;
   left: var(--plaque-x);
   top: var(--plaque-y);
   display: flex;
@@ -424,7 +522,8 @@ const capitalLabel = computed(() => {
   padding: 0.78em 1.02em 0.86em;
   border-radius: 0.7em;
   border-top-left-radius: 0;
-  background: #3e5964;
+  background: #002126;
+  font-size: 0.8em;
   color: #fff;
   pointer-events: auto;
   cursor: default;
@@ -459,7 +558,7 @@ const capitalLabel = computed(() => {
 .plaque-title {
   margin: 0 0 0.28em;
   font-size: 1.12em;
-  font-weight: 600;
+  font-weight: 400;
   line-height: 1.25;
 }
 
