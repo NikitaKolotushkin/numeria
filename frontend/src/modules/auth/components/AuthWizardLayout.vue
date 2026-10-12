@@ -33,7 +33,7 @@
       </button>
     </header>
 
-    <main class="wizard-card">
+    <main class="wizard-card" :class="{ 'align-title-media': alignTitleToMedia }">
       <h2 class="card-title">{{ title }}</h2>
       <div class="card-body">
         <slot />
@@ -46,7 +46,8 @@
 defineProps({
   title: { type: String, required: true },
   headerTitle: { type: String, default: 'Узнаем немного' },
-  isLoading: { type: Boolean, default: false }
+  isLoading: { type: Boolean, default: false },
+  alignTitleToMedia: { type: Boolean, default: false }
 })
 
 defineEmits(['prev', 'next'])
@@ -61,6 +62,8 @@ defineEmits(['prev', 'next'])
   --auth-card-padding: clamp(1.4rem, 2.4vmin, 2.15rem);
   --auth-radius: clamp(1.75rem, 2.4vw, 2.5rem);
   --auth-media-radius: clamp(1.15rem, 1.6vw, 1.55rem);
+  --auth-split-columns: minmax(13.5rem, 0.72fr) minmax(0, 1.28fr);
+  --auth-split-gap: clamp(1.25rem, 2.8vw, 2.4rem);
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -166,6 +169,24 @@ defineEmits(['prev', 'next'])
   flex: 1;
   min-height: 0;
   height: 100%;
+}
+
+.wizard-card.align-title-media {
+  display: grid;
+  grid-template-columns: var(--auth-split-columns);
+  column-gap: var(--auth-split-gap);
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.wizard-card.align-title-media .card-title {
+  grid-column: 2;
+  grid-row: 1;
+  text-align: left;
+}
+
+.wizard-card.align-title-media .card-body {
+  grid-column: 1 / -1;
+  grid-row: 2;
 }
 
 .spinner {

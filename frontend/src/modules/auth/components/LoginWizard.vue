@@ -4,6 +4,7 @@
   <AuthWizardLayout
     title="Войдем"
     header-title="С возвращением"
+    align-title-to-media
     :is-loading="authStore.isLoading"
     @prev="handlePrev"
     @next="handleNext"

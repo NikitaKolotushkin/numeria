@@ -10,6 +10,7 @@
   <AuthWizardLayout
     v-else
     :title="stepTitles[currentStep]"
+    :align-title-to-media="currentStep === 1 || currentStep === 2"
     :is-loading="authStore.isLoading"
     @prev="handlePrev"
     @next="handleNext"

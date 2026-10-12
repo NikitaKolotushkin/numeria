@@ -205,10 +205,6 @@ function spriteSrc(id, level) {
   return entry ? entry[1] : ''
 }
 
-function rollLevel() {
-  return 1 + Math.floor(Math.random() * 5)
-}
-
 const authStore = useAuthStore()
 
 const plots = [
@@ -218,7 +214,7 @@ const plots = [
   { id: 'accounting', title: 'Бухгалтерия' },
   { id: 'marketing', title: 'Маркетинг' }
 ].map((plot) => {
-  const level = rollLevel()
+  const level = 1
   return {
     ...plot,
     level,

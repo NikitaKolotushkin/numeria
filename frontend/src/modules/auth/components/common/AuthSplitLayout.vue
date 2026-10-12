@@ -28,7 +28,8 @@ defineProps({
 }
 
 .variant-form {
-  grid-template-columns: minmax(13.5rem, 0.72fr) minmax(0, 1.28fr);
+  grid-template-columns: var(--auth-split-columns, minmax(13.5rem, 0.72fr) minmax(0, 1.28fr));
+  gap: var(--auth-split-gap, clamp(1.25rem, 2.8vw, 2.4rem));
 }
 
 .variant-quiz {
