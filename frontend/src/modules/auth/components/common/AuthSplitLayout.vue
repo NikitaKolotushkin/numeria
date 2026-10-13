@@ -46,6 +46,7 @@ defineProps({
 
 .variant-form .split-left {
   justify-content: flex-start;
+  overflow: auto;
 }
 
 .variant-form .split-right {

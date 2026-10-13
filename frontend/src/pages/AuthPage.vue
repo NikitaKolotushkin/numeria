@@ -42,4 +42,21 @@ const isLogin = computed(() => route.query.mode === 'login')
   z-index: 2;
   width: min(88vw, 74rem);
 }
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .auth-page {
+    height: 100dvh;
+    min-height: 0;
+    box-sizing: border-box;
+    align-items: stretch;
+    padding: 0.4rem 0.7rem;
+  }
+
+  .auth-container {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+}
 </style>

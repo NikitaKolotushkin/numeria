@@ -22,8 +22,7 @@ defineProps({
 <style scoped>
 .back-pill {
   --auth-ink: #12202b;
-  --auth-nav-size: clamp(2.85rem, 6.2vh, 3.35rem);
-  height: var(--auth-nav-size);
+  height: var(--auth-nav-size, clamp(2.85rem, 6.2vh, 3.35rem));
   background: #ffffff;
   border: none;
   cursor: pointer;

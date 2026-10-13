@@ -60,14 +60,14 @@ defineEmits(['submit'])
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: clamp(1.25rem, 2.8vh, 1.75rem);
+  gap: var(--auth-login-gap, clamp(1.25rem, 2.8vh, 1.75rem));
   width: min(100%, 22rem);
 }
 
 .login-submit {
   align-self: center;
   min-width: 8.5rem;
-  height: clamp(2.55rem, 5.6vh, 2.9rem);
+  height: var(--auth-input-height, clamp(2.55rem, 5.6vh, 2.9rem));
   padding: 0 1.75rem;
   border: none;
   border-radius: 9999px;

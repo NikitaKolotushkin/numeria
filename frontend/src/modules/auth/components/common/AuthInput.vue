@@ -45,7 +45,7 @@ const handleInput = (event) => {
 
 .auth-input {
   width: 100%;
-  height: clamp(2.55rem, 5.6vh, 2.9rem);
+  height: var(--auth-input-height, clamp(2.55rem, 5.6vh, 2.9rem));
   background: #e7eef3;
   border: none;
   border-radius: 9999px;

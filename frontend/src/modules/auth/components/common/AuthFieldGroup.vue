@@ -17,11 +17,11 @@ defineProps({
 .section-group {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
+  gap: var(--auth-group-gap, 0.45rem);
 }
 
 .group-title {
-  font-size: clamp(0.95rem, 1.15vw, 1.05rem);
+  font-size: var(--auth-group-title, clamp(0.95rem, 1.15vw, 1.05rem));
   font-weight: 400;
   color: #12202b;
   margin: 0 0 0 0.55rem;
@@ -31,6 +31,6 @@ defineProps({
 .group-inputs {
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
+  gap: var(--auth-field-gap, 0.55rem);
 }
 </style>

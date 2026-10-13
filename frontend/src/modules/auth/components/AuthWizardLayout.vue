@@ -57,6 +57,12 @@ defineEmits(['prev', 'next'])
   --auth-media-radius: clamp(1.15rem, 1.6vw, 1.55rem);
   --auth-split-columns: minmax(13.5rem, 0.72fr) minmax(0, 1.28fr);
   --auth-split-gap: clamp(1.25rem, 2.8vw, 2.4rem);
+  --auth-input-height: clamp(2.55rem, 5.6vh, 2.9rem);
+  --auth-field-gap: 0.55rem;
+  --auth-group-gap: 0.45rem;
+  --auth-stack-gap: clamp(0.85rem, 2vh, 1.25rem);
+  --auth-group-title: clamp(0.95rem, 1.15vw, 1.05rem);
+  --auth-login-gap: clamp(1.25rem, 2.8vh, 1.75rem);
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -179,5 +185,34 @@ defineEmits(['prev', 'next'])
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .wizard-container {
+    flex: 1;
+    height: 100%;
+    min-height: 0;
+    gap: 0.35rem;
+    --auth-nav-size: 2.25rem;
+    --auth-card-padding: 0.65rem 0.85rem;
+    --auth-input-height: clamp(1.85rem, 6.2vh, 2.3rem);
+    --auth-field-gap: 0.28rem;
+    --auth-group-gap: 0.16rem;
+    --auth-stack-gap: 0.35rem;
+    --auth-group-title: 0.8rem;
+    --auth-login-gap: 0.5rem;
+  }
+
+  .wizard-card {
+    height: auto;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .card-title {
+    font-size: 1.05rem;
+    margin-bottom: 0.3rem;
+  }
 }
 </style>

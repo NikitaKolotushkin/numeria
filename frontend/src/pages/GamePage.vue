@@ -59,8 +59,8 @@
       <BackPill to="/" class="game-back" />
 
       <section class="case-card">
-        <h1 class="case-title">Кейс 2. Блок 3</h1>
-        <p class="case-subtitle">Затраты предприятия</p>
+        <h1 class="case-title">{{ caseHeading }}</h1>
+        <p class="case-subtitle">{{ caseSubtitle }}</p>
         <button type="button" class="case-next" @click="openCase">Вперед!</button>
       </section>
 
@@ -91,8 +91,8 @@
       >
         <div class="case-overlay-panel">
           <AuthWizardLayout
-            title="Затраты предприятия"
-            header-title="Кейс 2. Блок 3"
+            :title="caseSubtitle"
+            :header-title="caseHeading"
             @prev="closeCase"
           >
             <template #header-end>
@@ -223,6 +223,9 @@ function spriteSrc(id, level) {
 
 const authStore = useAuthStore()
 
+const CASE_LABEL = 'Кейс 2. Блок 3'
+const caseSubtitle = 'Подзаголовок кейса'
+
 const plots = [
   { id: 'laboratory', title: 'Лаборатория' },
   { id: 'factory', title: 'Завод' },
@@ -268,6 +271,7 @@ const buildingInfo = {
 }
 
 const activeBuildingId = ref(null)
+const selectedBuildingId = ref('laboratory')
 const caseOpen = ref(false)
 const plaquePoint = ref(null)
 const plaqueEl = ref(null)
@@ -281,6 +285,10 @@ let pendingOpen = null
 
 const playerName = computed(() => authStore.user?.firstName || 'Линад')
 const activePlot = computed(() => plots.find((plot) => plot.id === activeBuildingId.value) || null)
+const caseHeading = computed(() => {
+  const plot = plots.find((item) => item.id === selectedBuildingId.value) || plots[0]
+  return `${plot.title}: ${CASE_LABEL}`
+})
 
 function pointOnStage(stage, clientX, clientY) {
   const rect = stage.getBoundingClientRect()
@@ -485,6 +493,8 @@ function onStageClick(event) {
     closePlaque()
     return
   }
+
+  selectedBuildingId.value = plot.dataset.building
 
   if (fromKeyboard) {
     const image = plot.querySelector('.plot-image')
@@ -773,6 +783,31 @@ const capitalLabel = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+@container (max-height: 520px) {
+  .case-card {
+    width: min(24rem, 46%);
+    min-height: 0;
+    padding: 0.65rem 0.85rem 0.7rem;
+    gap: 0.2rem;
+  }
+
+  .case-title {
+    font-size: 0.95rem;
+  }
+
+  .case-subtitle {
+    font-size: 0.8rem;
+  }
+
+  .case-next {
+    height: 2rem;
+    min-width: 6.5rem;
+    margin-top: 0.35rem;
+    padding: 0 1.1rem;
+    font-size: 0.85rem;
+  }
 }
 
 .player {
