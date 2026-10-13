@@ -2,6 +2,7 @@
   <div class="game-page">
     <div
       class="stage"
+      :class="{ 'is-building-open': focusedBuildingId }"
       @click="onStageClick"
       @pointermove="onStagePointerMove"
     >
@@ -100,6 +101,11 @@
                 <span>{{ playerName }}</span>
               </div>
             </template>
+
+            <div class="case-split">
+              <div class="case-split-test"></div>
+              <div class="case-split-side"></div>
+            </div>
           </AuthWizardLayout>
         </div>
       </div>
@@ -545,8 +551,8 @@ const capitalLabel = computed(() => {
 
 .stage-blur.is-active {
   background-color: rgb(0 0 0 / 1%);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 .case-overlay {
@@ -562,6 +568,30 @@ const capitalLabel = computed(() => {
 
 .case-overlay-panel {
   width: min(88vw, 74rem);
+}
+
+.case-overlay :deep(.card-title) {
+  font-size: clamp(1.35rem, 1.75vw, 1.65rem);
+  margin-bottom: clamp(0.9rem, 2vh, 1.4rem);
+}
+
+.case-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(1.25rem, 2.8vw, 2.4rem);
+  height: 100%;
+  min-height: 0;
+}
+
+.case-split-test,
+.case-split-side {
+  min-width: 0;
+  min-height: 0;
+}
+
+.case-split-side {
+  border-radius: clamp(1.15rem, 1.6vw, 1.55rem);
+  background: #e6ebed;
 }
 
 .plot {
@@ -679,6 +709,12 @@ const capitalLabel = computed(() => {
   z-index: 3;
   left: 4.785%;
   top: 3.819%;
+}
+
+.stage.is-building-open .game-back,
+.stage.is-building-open .case-card,
+.stage.is-building-open .player {
+  z-index: 6;
 }
 
 .case-card {
