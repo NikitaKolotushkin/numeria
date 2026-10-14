@@ -1,21 +1,23 @@
 <template>
   <div class="quiz-view">
-    <div class="quiz-pagination">
-      <button
-        v-for="(item, index) in questions"
-        :key="item.id"
-        type="button"
-        class="page-btn"
-        :class="{ active: currentQuestionIndex === index }"
-        @click="currentQuestionIndex = index"
-      >
-        {{ index + 1 }}
-      </button>
+    <div class="quiz-left">
+      <div class="quiz-pagination">
+        <button
+          v-for="(item, index) in questions"
+          :key="item.id"
+          type="button"
+          class="page-btn"
+          :class="{ active: currentQuestionIndex === index }"
+          @click="currentQuestionIndex = index"
+        >
+          {{ index + 1 }}
+        </button>
+      </div>
+
+      <p v-if="isComplete" class="quiz-score">Баллы: {{ score }} из {{ questions.length }}</p>
+
+      <p class="question-text">{{ currentQuestion.question }}</p>
     </div>
-
-    <p v-if="isComplete" class="quiz-score">Баллы: {{ score }} из {{ questions.length }}</p>
-
-    <p class="question-text">{{ currentQuestion.question }}</p>
 
     <div class="options-group">
       <button
@@ -73,13 +75,21 @@ const goForward = () => {
 
 <style scoped>
 .quiz-view {
+  display: grid;
+  grid-template-columns: minmax(14rem, 0.95fr) minmax(0, 1.15fr);
+  gap: clamp(1.25rem, 2.8vw, 2.4rem);
+  align-items: start;
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+}
+
+.quiz-left {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: clamp(0.85rem, 1.8vh, 1.2rem);
-  height: 100%;
-  min-height: 0;
-  overflow: auto;
+  min-width: 0;
 }
 
 .quiz-pagination {
@@ -89,14 +99,14 @@ const goForward = () => {
 }
 
 .page-btn {
-  width: 1.85rem;
-  height: 1.85rem;
+  width: 2.35rem;
+  height: 2.35rem;
   border-radius: 50%;
   border: none;
-  background: transparent;
+  background: #e6ebed;
   color: #12202b;
   font-weight: 400;
-  font-size: 0.95rem;
+  font-size: 1.22rem;
   font-family: inherit;
   cursor: pointer;
 }
@@ -109,7 +119,7 @@ const goForward = () => {
 .quiz-score {
   margin: 0;
   color: #12202b;
-  font-size: clamp(0.95rem, 1.15vw, 1.05rem);
+  font-size: clamp(1.08rem, 1.35vw, 1.22rem);
   font-weight: 700;
   line-height: 1.3;
 }
@@ -118,7 +128,7 @@ const goForward = () => {
   margin: 0;
   max-width: 36rem;
   color: #12202b;
-  font-size: clamp(0.95rem, 1.2vw, 1.08rem);
+  font-size: clamp(1.08rem, 1.4vw, 1.22rem);
   font-weight: 400;
   line-height: 1.5;
 }
@@ -132,7 +142,7 @@ const goForward = () => {
 
 .option-card {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.85rem;
   width: 100%;
   margin: 0;
@@ -146,13 +156,12 @@ const goForward = () => {
 }
 
 .radio-indicator {
-  width: 1.1rem;
-  height: 1.1rem;
-  margin-top: 0.15rem;
+  width: 1.25rem;
+  height: 1.25rem;
   border-radius: 50%;
-  border: 0.14rem solid #c5d0da;
+  border: 0.14rem solid #e6ebed;
   flex-shrink: 0;
-  background: #ffffff;
+  background: #e6ebed;
 }
 
 .option-card.selected .radio-indicator {
@@ -162,26 +171,27 @@ const goForward = () => {
 
 .option-text {
   color: #12202b;
-  font-size: clamp(0.9rem, 1.1vw, 1rem);
+  font-size: clamp(1.02rem, 1.28vw, 1.15rem);
   font-weight: 400;
   line-height: 1.45;
 }
 
 @container (max-height: 520px) {
-  .quiz-view {
+  .quiz-view,
+  .quiz-left {
     gap: 0.45rem;
   }
 
   .question-text,
   .option-text,
   .quiz-score {
-    font-size: 0.8rem;
+    font-size: 0.92rem;
   }
 
   .page-btn {
-    width: 1.5rem;
-    height: 1.5rem;
-    font-size: 0.8rem;
+    width: 1.95rem;
+    height: 1.95rem;
+    font-size: 1.05rem;
   }
 }
 </style>

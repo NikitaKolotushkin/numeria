@@ -20,6 +20,7 @@ export const useStudyStore = defineStore('study', () => {
   const isRemote = ref(false)
   const score = ref(0)
   const error = ref('')
+  const notice = ref('')
 
   let requestId = 0
 
@@ -31,6 +32,7 @@ export const useStudyStore = defineStore('study', () => {
     const id = ++requestId
     isLoading.value = true
     error.value = ''
+    notice.value = ''
     isComplete.value = false
     quizStarted.value = false
     isRemote.value = false
@@ -133,10 +135,15 @@ export const useStudyStore = defineStore('study', () => {
   }
 
   async function complete() {
+    const unanswered = questions.value.some((_, index) => answers.value[index] === undefined)
+    if (unanswered) {
+      notice.value = 'Ответьте на все вопросы теста'
+      return
+    }
     try {
       await finish()
     } catch (err) {
-      error.value = err.message || 'Не удалось отправить ответы'
+      notice.value = err.message || 'Не удалось отправить ответы'
     }
   }
 
@@ -178,6 +185,7 @@ export const useStudyStore = defineStore('study', () => {
     isRemote.value = false
     score.value = 0
     error.value = ''
+    notice.value = ''
     useAIStore().clear()
   }
 
@@ -194,6 +202,7 @@ export const useStudyStore = defineStore('study', () => {
     quizStarted,
     score,
     error,
+    notice,
     openCase,
     startQuiz,
     answerQuestion,

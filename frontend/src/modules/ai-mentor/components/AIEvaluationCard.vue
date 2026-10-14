@@ -35,6 +35,7 @@ defineEmits(['revise'])
 }
 
 .review-card {
+  flex: 1;
   overflow: auto;
   min-height: 0;
   padding: 1rem 1.1rem;
@@ -45,7 +46,7 @@ defineEmits(['revise'])
 
 .review-verdict {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 1.2rem;
   font-weight: 700;
   line-height: 1.35;
 }
@@ -53,7 +54,7 @@ defineEmits(['revise'])
 .review-score,
 .review-text {
   margin: 0.7rem 0 0;
-  font-size: 0.95rem;
+  font-size: 1.1rem;
   font-weight: 400;
   line-height: 1.45;
 }
@@ -61,19 +62,21 @@ defineEmits(['revise'])
 .review-zones {
   margin: 0.85rem 0 0;
   padding-left: 1.15rem;
-  font-size: 0.95rem;
+  font-size: 1.1rem;
   font-weight: 400;
   line-height: 1.45;
 }
 
 .review-revise {
   align-self: center;
+  margin-top: auto;
+  flex-shrink: 0;
   padding: 0;
   border: none;
   background: transparent;
   color: #061e27;
   font: inherit;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   font-weight: 500;
   cursor: pointer;
 }

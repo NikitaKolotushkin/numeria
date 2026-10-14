@@ -92,14 +92,14 @@ const goForward = () => {
 }
 
 .page-btn {
-  width: 1.85rem;
-  height: 1.85rem;
+  width: 2.35rem;
+  height: 2.35rem;
   border-radius: 50%;
   border: none;
-  background: transparent;
+  background: #e6ebed;
   color: #12202b;
   font-weight: 400;
-  font-size: 0.95rem;
+  font-size: 1.22rem;
   font-family: inherit;
   cursor: pointer;
 }
@@ -127,7 +127,7 @@ const goForward = () => {
 
 .option-card {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.85rem;
   cursor: pointer;
 }
@@ -135,11 +135,10 @@ const goForward = () => {
 .radio-indicator {
   width: 1.1rem;
   height: 1.1rem;
-  margin-top: 0.15rem;
   border-radius: 50%;
-  border: 0.14rem solid #c5d0da;
+  border: 0.14rem solid #e6ebed;
   flex-shrink: 0;
-  background: #ffffff;
+  background: #e6ebed;
 }
 
 .option-card.selected .radio-indicator {

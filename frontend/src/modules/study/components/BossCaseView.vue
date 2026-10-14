@@ -18,15 +18,17 @@
           :disabled="submitting"
           @input="$emit('update:draft', $event.target.value)"
         ></textarea>
-        <button
-          type="button"
-          class="boss-submit"
-          :disabled="submitting"
-          @click="$emit('submit')"
-        >
-          {{ submitting ? 'Отправка' : 'Отправить' }}
-        </button>
-        <p v-if="fieldError" class="boss-error">{{ fieldError }}</p>
+        <div class="boss-actions">
+          <p v-if="fieldError" class="boss-error">{{ fieldError }}</p>
+          <button
+            type="button"
+            class="boss-submit"
+            :disabled="submitting"
+            @click="$emit('submit')"
+          >
+            {{ submitting ? 'Отправка' : 'Отправить' }}
+          </button>
+        </div>
       </template>
     </div>
   </div>
@@ -65,7 +67,7 @@ defineEmits(['update:draft', 'submit', 'revise'])
   margin: 0;
   overflow: auto;
   color: #12202b;
-  font-size: clamp(0.95rem, 1.2vw, 1.08rem);
+  font-size: clamp(1.08rem, 1.4vw, 1.22rem);
   font-weight: 400;
   line-height: 1.5;
 }
@@ -92,7 +94,7 @@ defineEmits(['update:draft', 'submit', 'revise'])
   background: #ffffff;
   color: #12202b;
   font: inherit;
-  font-size: 0.95rem;
+  font-size: 1.1rem;
   font-weight: 400;
   line-height: 1.45;
   outline: none;
@@ -100,6 +102,15 @@ defineEmits(['update:draft', 'submit', 'revise'])
 
 .boss-input::placeholder {
   color: #94a3b8;
+}
+
+.boss-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  width: 100%;
+  margin-top: auto;
 }
 
 .boss-submit {
@@ -111,7 +122,7 @@ defineEmits(['update:draft', 'submit', 'revise'])
   background: #061e27;
   color: #ffffff;
   font: inherit;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   font-weight: 500;
   cursor: pointer;
 }
@@ -124,7 +135,7 @@ defineEmits(['update:draft', 'submit', 'revise'])
 .boss-error {
   margin: 0;
   color: #b91c1c;
-  font-size: 0.9rem;
+  font-size: 1.02rem;
   font-weight: 400;
   text-align: center;
 }
