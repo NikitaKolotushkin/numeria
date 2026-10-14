@@ -1,22 +1,51 @@
+import json
 import uuid
+from pathlib import Path
 
-from app.corpus import HOBBY_NICHE, block_material, boss_case, boss_material, niche_for
+import httpx
+
+from app.config import settings
+from app.corpus import HOBBY_NICHE, block_material, boss_case, boss_material, niche_phrase, niches_for
 from app.errors import ApiError
 from app.gigachat import generate_material, review_with_model
 
-profiles: dict[uuid.UUID, dict[str, str]] = {}
+profiles: dict[uuid.UUID, dict] = {}
+
+
+def load_profiles() -> None:
+    path = _profile_file()
+    if path is None or not path.exists():
+        return
+    raw = json.loads(path.read_text())
+    if not isinstance(raw, dict):
+        return
+    for key, value in raw.items():
+        if isinstance(value, dict):
+            profiles[uuid.UUID(key)] = value
 
 
 def personalize(user_id: uuid.UUID, hobbies: list[str], onboarding: list[dict]) -> dict:
-    niche = niche_for([str(item) for item in hobbies])
+    niches = niches_for([str(item) for item in hobbies])
     formal = [item for item in onboarding if isinstance(item, dict) and item.get("optionIndex", 0) >= 2]
     tone = "деловой" if len(formal) >= 3 else "конкретный"
-    profiles[user_id] = {"niche": niche, "tone": tone}
-    return {"niche": niche, "tone": tone}
+    record = {"niches": niches, "niche": niche_phrase(niches), "tone": tone}
+    profiles[user_id] = record
+    _save_profiles()
+    return {"niche": record["niche"], "niches": niches, "tone": tone}
+
+
+def ensure_profile(user_id: uuid.UUID) -> dict:
+    found = profiles.get(user_id)
+    if found:
+        return found
+    remote = _fetch_choices(user_id)
+    if remote is None:
+        return {}
+    return personalize(user_id, remote["hobbies"], remote["onboardingAnswers"])
 
 
 def material(user_id: uuid.UUID, kind: str, slot_title: str, discipline_title: str) -> dict:
-    profile = profiles.get(user_id) or {}
+    profile = ensure_profile(user_id)
     generated = generate_material(
         kind,
         slot_title,
@@ -38,15 +67,16 @@ def material(user_id: uuid.UUID, kind: str, slot_title: str, discipline_title: s
         payload = {
             **payload,
             "theoryMarkdown": (
-                f"Ниша игрока: {profile['niche']}. Тот же материал можно примерять к этому делу.\n\n"
+                f"Ниши игрока: {profile['niche']}. Тот же материал можно примерять к каждому из этих дел.\n\n"
                 + payload["theoryMarkdown"]
             ),
         }
     return payload
 
 
-def review(prompt: str, theory: str, answer: str, pass_score: int) -> dict:
-    model = review_with_model(prompt, theory, answer)
+def review(user_id: uuid.UUID, prompt: str, theory: str, answer: str, pass_score: int) -> dict:
+    profile = ensure_profile(user_id)
+    model = review_with_model(prompt, theory, answer, profile.get("niche", ""))
     if model is not None:
         score = model["score"]
         verdict = "accepted" if score >= pass_score else "retry"
@@ -114,3 +144,42 @@ def _phrase(items: list[str]) -> str:
 
 def known_hobbies() -> set[str]:
     return set(HOBBY_NICHE)
+
+
+def _profile_file() -> Path | None:
+    if not settings.profile_path.strip():
+        return None
+    return Path(settings.profile_path)
+
+
+def _save_profiles() -> None:
+    path = _profile_file()
+    if path is None:
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {str(user_id): record for user_id, record in profiles.items()}
+    path.write_text(json.dumps(payload, ensure_ascii=False))
+
+
+def _fetch_choices(user_id: uuid.UUID) -> dict | None:
+    if not settings.users_base_url.strip():
+        return None
+    try:
+        response = httpx.post(
+            f"{settings.users_base_url.rstrip('/')}/internal/profiles",
+            json={"userIds": [str(user_id)]},
+            headers={"X-Service-Token": settings.service_token},
+            timeout=2,
+        )
+    except httpx.HTTPError:
+        return None
+    if response.status_code != 200:
+        return None
+    for row in response.json().get("users", []):
+        if row.get("userId") != str(user_id):
+            continue
+        return {
+            "hobbies": row.get("hobbies") or [],
+            "onboardingAnswers": row.get("onboardingAnswers") or [],
+        }
+    return None

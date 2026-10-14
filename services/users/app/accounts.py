@@ -81,7 +81,7 @@ def register_user(db: Session, payload: RegisterIn) -> tuple[User, AuthOut]:
         Consent(
             user_id=user.id,
             personal_data_at=now,
-            terms_at=now,
+            terms_at=now if payload.consents.terms else None,
             ai_assessment_at=now,
             policy_version=payload.consents.policy_version,
         )

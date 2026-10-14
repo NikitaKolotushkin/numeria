@@ -49,7 +49,7 @@ export const authApi = {
         })),
         consents: {
           personalData: Boolean(registrationData.consents?.personalData),
-          terms: Boolean(registrationData.consents?.terms),
+          terms: false,
           aiAssessment: Boolean(registrationData.consents?.aiAssessment),
           policyVersion: POLICY_VERSION
         }

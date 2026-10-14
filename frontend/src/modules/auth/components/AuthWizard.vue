@@ -10,7 +10,7 @@
   <AuthWizardLayout
     v-else
     :title="stepTitles[currentStep]"
-    :align-title-to-media="currentStep === 1 || currentStep === 2"
+    :align-title-to-media="currentStep === 1 || currentStep === 2 || currentStep === 5"
     :is-loading="authStore.isLoading"
     @prev="handlePrev"
     @next="handleNext"
@@ -33,7 +33,11 @@
     <RegisterStepQuiz
       v-else-if="currentStep === 4"
       v-model="formData.quizAnswers"
-      @complete="showWelcome"
+    />
+
+    <RegisterStepConsents
+      v-else-if="currentStep === 5"
+      v-model="formData"
     />
   </AuthWizardLayout>
 </template>
@@ -48,8 +52,9 @@ import RegisterStepPersonal from '@/modules/auth/components/steps/RegisterStepPe
 import RegisterStepSecurity from '@/modules/auth/components/steps/RegisterStepSecurity.vue'
 import RegisterStepHobbies from '@/modules/auth/components/steps/RegisterStepHobbies.vue'
 import RegisterStepQuiz from '@/modules/auth/components/steps/RegisterStepQuiz.vue'
+import RegisterStepConsents from '@/modules/auth/components/steps/RegisterStepConsents.vue'
 import RegisterStepWelcome from '@/modules/auth/components/steps/RegisterStepWelcome.vue'
-import { isAllowedCourse } from '@/modules/auth/api/mockData'
+import { isAllowedCourse, isAllowedRegistrationEmail } from '@/modules/auth/api/mockData'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -72,7 +77,8 @@ const stepTitles = {
   1: 'Познакомимся',
   2: 'Защитимся',
   3: 'Персонализируем',
-  4: 'Небольшой тест'
+  4: 'Небольшой тест',
+  5: 'Согласимся'
 }
 
 const formData = reactive({
@@ -88,7 +94,6 @@ const formData = reactive({
   quizAnswers: [],
   consents: {
     personalData: false,
-    terms: false,
     aiAssessment: false
   }
 })
@@ -132,8 +137,8 @@ const handleNext = async () => {
   }
 
   if (currentStep.value === 2) {
-    if (!formData.email.trim() || !formData.email.includes('@')) {
-      errorMessage.value = 'Введите корректный email'
+    if (!isAllowedRegistrationEmail(formData.email)) {
+      errorMessage.value = 'Регистрация доступна только для почты @guu.ru'
       return
     }
     if (!formData.password || formData.password.length < 4) {
@@ -142,10 +147,6 @@ const handleNext = async () => {
     }
     if (formData.password !== formData.confirmPassword) {
       errorMessage.value = 'Пароли не совпадают'
-      return
-    }
-    if (!formData.consents.personalData || !formData.consents.terms || !formData.consents.aiAssessment) {
-      errorMessage.value = 'Нужны три согласия'
       return
     }
     currentStep.value = 3
@@ -165,6 +166,15 @@ const handleNext = async () => {
     const answeredCount = formData.quizAnswers.filter((answer) => answer !== undefined).length
     if (answeredCount < 5) {
       errorMessage.value = 'Ответьте на все вопросы теста'
+      return
+    }
+    currentStep.value = 5
+    return
+  }
+
+  if (currentStep.value === 5) {
+    if (!formData.consents.personalData || !formData.consents.aiAssessment) {
+      errorMessage.value = 'Нужны оба согласия'
       return
     }
     showWelcome()

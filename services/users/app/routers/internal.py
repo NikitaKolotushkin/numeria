@@ -21,4 +21,17 @@ def profiles(payload: ProfilesIn, _service=Depends(require_service), db: Session
     if not payload.userIds:
         return {"users": []}
     rows = db.scalars(select(User).where(User.id.in_(payload.userIds))).all()
-    return {"users": [{"userId": str(row.id), "firstName": row.first_name} for row in rows]}
+    return {
+        "users": [
+            {
+                "userId": str(row.id),
+                "firstName": row.first_name,
+                "hobbies": [hobby.hobby_id for hobby in row.hobbies],
+                "onboardingAnswers": [
+                    {"questionId": answer.question_id, "optionIndex": answer.option_index}
+                    for answer in row.onboarding_answers
+                ],
+            }
+            for row in rows
+        ]
+    }

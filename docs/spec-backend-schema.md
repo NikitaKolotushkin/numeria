@@ -2,7 +2,7 @@
 
 Границы сервисов: `docs/spec-backend.md`. Тела HTTP: `docs/spec-backend-api.md`. Продукт: `docs/spec-product.md`.
 
-Таблицы `numeria_users`, `numeria_study` и `numeria_game` уже создаются миграциями этих сервисов. Сервис `ai` запущен, но базу `numeria_ai` не использует: ниша, тон и access token живут в памяти процесса. Базы `numeria_crisis`, `numeria_career`, `numeria_ai` и `numeria_notifications` в compose названы, таблиц в них ещё нет. Ниже описан полный пилотный состав, включая ещё не собранные базы.
+Таблицы `numeria_users`, `numeria_study` и `numeria_game` уже создаются миграциями этих сервисов. Сервис `ai` запущен, но базу `numeria_ai` не использует: список ниш и тон лежат в файле `PROFILE_PATH`, access token — в памяти процесса. Базы `numeria_crisis`, `numeria_career`, `numeria_ai` и `numeria_notifications` в compose названы, таблиц в них ещё нет. Ниже описан полный пилотный состав, включая ещё не собранные базы.
 
 Семь баз на одном Postgres 15. Внешних ключей между базами нет: чужой идентификатор хранится как `uuid` или `text` без `REFERENCES`. Время — `timestamptz`. Деньги и опыт — `integer`. Первичные ключи строк — `uuid`, кроме справочника модулей и дисциплин: у них стабильные текстовые id.
 
@@ -66,7 +66,7 @@ users
 consents
   user_id            uuid pk references users
   personal_data_at   timestamptz not null
-  terms_at           timestamptz not null
+  terms_at           timestamptz
   ai_assessment_at   timestamptz not null
   policy_version     text not null
 
@@ -344,7 +344,7 @@ request_log
 
 Индекс `(user_id, kind, created_at desc)`.
 
-Таблица ещё не создаётся миграцией. Вид `material` зарезервирован под генерацию среза. Пока журнал не пишется, профиль сеттинга перезапуск контейнера не переживает.
+Таблица ещё не создаётся миграцией. Вид `material` зарезервирован под генерацию среза. Журнал запросов не пишется. Профиль сеттинга переживает перезапуск в файле сервиса, не в этой таблице.
 
 ---
 

@@ -1,11 +1,6 @@
 <template>
   <div class="welcome-step">
-    <div class="welcome-brand">
-      <div class="welcome-mark" aria-hidden="true">
-        <span class="welcome-mark-letter">H</span>
-      </div>
-      <span class="welcome-name">Нумерия</span>
-    </div>
+    <img src="@/assets/images/logo_numeria.png" alt="Нумерия" class="welcome-logo" />
 
     <p class="welcome-title">
       Ваша персонализация готова!<br>
@@ -42,39 +37,14 @@ defineEmits(['start'])
   gap: clamp(1.5rem, 4vh, 2.75rem);
   width: min(40rem, 90vw);
   margin: 0 auto;
+  font-family: 'Geologica', sans-serif;
 }
 
-.welcome-brand {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.85rem;
-}
-
-.welcome-mark {
-  width: clamp(3.25rem, 5vw, 4.25rem);
-  height: clamp(3.25rem, 5vw, 4.25rem);
-  border-radius: 1.05rem;
-  background: #061e27;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.welcome-mark-letter {
-  color: #ffffff;
-  font-size: clamp(1.6rem, 2.4vw, 2.1rem);
-  font-weight: 800;
-  line-height: 1;
-}
-
-.welcome-name {
-  color: #ffffff;
-  font-size: clamp(2.1rem, 3.6vw, 3.15rem);
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1;
+.welcome-logo {
+  width: min(28rem, 70vw);
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0.625rem 1.25rem rgba(0, 0, 0, 0.4));
 }
 
 .welcome-title {
@@ -83,7 +53,6 @@ defineEmits(['start'])
   font-size: clamp(1.35rem, 2.4vw, 2rem);
   font-weight: 700;
   line-height: 1.35;
-  letter-spacing: -0.02em;
 }
 
 .welcome-cta {
@@ -96,7 +65,7 @@ defineEmits(['start'])
   color: #ffffff;
   font-size: 1.125rem;
   font-weight: 600;
-  font-family: inherit;
+  font-family: 'Geologica', sans-serif;
   cursor: pointer;
   display: flex;
   align-items: center;

@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class ConsentIn(BaseModel):
     personal_data: bool = Field(alias="personalData")
-    terms: bool
+    terms: bool = False
     ai_assessment: bool = Field(alias="aiAssessment")
     policy_version: str = Field(alias="policyVersion")
 

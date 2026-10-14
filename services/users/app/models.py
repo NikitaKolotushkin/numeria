@@ -36,7 +36,7 @@ class Consent(Base):
 
     user_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id"), primary_key=True)
     personal_data_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    terms_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    terms_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     ai_assessment_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     policy_version: Mapped[str] = mapped_column(String(32), nullable=False)
 

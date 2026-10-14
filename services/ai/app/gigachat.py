@@ -16,7 +16,8 @@ _OAUTH_URL = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
 _CHAT_URL = "https://gigachat.devices.sberbank.ru/api/v1/chat/completions"
 
 
-def review_with_model(prompt: str, theory: str, answer: str) -> dict | None:
+def review_with_model(prompt: str, theory: str, answer: str, niche: str = "") -> dict | None:
+    setting = f"\nНиши игрока: {niche}. Оценивай ответ в этой обстановке.\n" if niche.strip() else "\n"
     content = complete(
         (
             "Ты проверяешь открытый ответ студента экономического курса. "
@@ -24,7 +25,7 @@ def review_with_model(prompt: str, theory: str, answer: str) -> dict | None:
             "Верни только JSON с полями score (целое 0-100), reviewText (короткий разбор) "
             "и growthZones (список из одной-трёх коротких строк)."
         ),
-        f"Условие:\n{prompt}\n\nТеория:\n{theory}\n\nОтвет студента:\n{answer}",
+        f"Условие:\n{prompt}\n\nТеория:\n{theory}{setting}\nОтвет студента:\n{answer}",
     )
     if content is None:
         return None
@@ -42,23 +43,28 @@ def generate_material(kind: str, slot_title: str, discipline_title: str, niche: 
         system = (
             "Ты пишешь открытый бизнес-кейс уровня Junior для студента. "
             "Кейс опирается на учебную тему модуля и требует решения, а не определения. "
+            "Весь текст задания происходит в мире всех переданных ниш сразу: каждая ниша должна быть нужна для решения, а не упомянута для вида. "
             "Не выдумывай точные статистические цифры и названия реальных компаний. "
             "Верни только JSON с полем promptMarkdown: связный текст задания на русском, 4-7 предложений."
         )
-        user = f"Модуль: {discipline_title}. Ниша игрока: {setting}. Тон: {voice}."
+        user = (
+            f"Модуль: {discipline_title}. Ниши игрока, используй все: {setting}. Тон: {voice}."
+        )
     elif kind == "block":
         system = (
             "Ты пишешь короткий учебный блок по экономике для студента вуза. "
             "Теория — два абзаца без списков. Затем ровно три вопроса. "
             "У каждого вопроса ровно четыре варианта, и ровно один с isCorrect true. "
-            "Верный вариант не ставь всегда первым. Не выдумывай точные статистические цифры и названия реальных компаний. "
+            "Верный вариант не ставь всегда первым. "
+            "Теория, каждый вопрос и каждый вариант должны опираться на все переданные ниши сразу, а не на одну из них. "
+            "Учебные определения остаются верными. Примеры и формулировки бери из всех ниш. "
+            "Не выдумывай точные статистические цифры и названия реальных компаний. "
             "Верни только JSON с полями theoryMarkdown и questions. "
             "Вопрос: prompt и options, вариант: body и isCorrect."
         )
         user = (
             f"Дисциплина: {discipline_title}. Слот: {slot_title}. "
-            f"Ниша игрока: {setting}. Тон: {voice}. "
-            "Примеры в теории можно брать из этой ниши, учебные факты остаются общими."
+            f"Ниши игрока, используй все: {setting}. Тон: {voice}."
         )
     else:
         return None

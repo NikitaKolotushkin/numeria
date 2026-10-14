@@ -4,9 +4,15 @@ from fastapi.responses import JSONResponse
 
 from app.errors import ApiError
 from app.routers.internal import router as internal_router
+from app.service import load_profiles
 
 app = FastAPI()
 app.include_router(internal_router)
+
+
+@app.on_event("startup")
+def startup() -> None:
+    load_profiles()
 
 
 @app.exception_handler(ApiError)

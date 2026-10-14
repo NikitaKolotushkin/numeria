@@ -81,6 +81,13 @@ def test_missing_consent():
     assert response.json()["error"]["code"] == "consent_required"
 
 
+def test_terms_consent_is_optional():
+    body = register_body(email="terms-off@guu.ru")
+    body["consents"]["terms"] = False
+    response = client.post("/auth/register", json=body)
+    assert response.status_code == 201
+
+
 def test_duplicate_email():
     body = register_body()
     assert client.post("/auth/register", json=body).status_code == 201

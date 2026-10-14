@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.deps import require_service
 from app.errors import ApiError
-from app.service import crisis_draft, material, personalize, review
+from app.service import crisis_draft, ensure_profile, material, personalize, review
 
 router = APIRouter(dependencies=[Depends(require_service)])
 
@@ -66,11 +66,12 @@ def material_route(body: MaterialIn):
 def review_route(body: ReviewIn):
     if not body.answer_text.strip() or not body.prompt_markdown.strip():
         raise ApiError(422, "validation_error", "Проверьте заполненные поля")
-    return review(body.prompt_markdown, body.theory_markdown, body.answer_text, body.pass_score)
+    return review(body.user_id, body.prompt_markdown, body.theory_markdown, body.answer_text, body.pass_score)
 
 
 @router.post("/internal/crisis-draft")
 def crisis_route(body: CrisisIn):
     if not body.theory_markdown.strip():
         raise ApiError(422, "validation_error", "Проверьте заполненные поля")
-    return crisis_draft(body.theory_markdown, body.niche)
+    niche = ensure_profile(body.user_id).get("niche") or body.niche
+    return crisis_draft(body.theory_markdown, niche)

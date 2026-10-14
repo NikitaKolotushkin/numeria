@@ -61,8 +61,8 @@ def require_policy_version(version: str) -> str:
 
 
 def validate_register(payload: RegisterIn) -> RegisterIn:
-    if not (payload.consents.personal_data and payload.consents.terms and payload.consents.ai_assessment):
-        raise ApiError(422, "consent_required", "Нужны три согласия")
+    if not (payload.consents.personal_data and payload.consents.ai_assessment):
+        raise ApiError(422, "consent_required", "Нужны оба согласия")
     payload.first_name = require_text(payload.first_name, 80, "Укажите имя")
     payload.last_name = require_text(payload.last_name, 80, "Укажите фамилию")
     payload.university = require_text(payload.university, 160, "Укажите ваш университет")

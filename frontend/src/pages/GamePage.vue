@@ -116,7 +116,6 @@ import { useAuthStore } from '@/modules/auth/store/useAuthStore'
 import { useGameStore } from '@/modules/game/store/useGameStore'
 import AuthWizardLayout from '@/modules/auth/components/AuthWizardLayout.vue'
 import CaseRunner from '@/modules/study/components/CaseRunner.vue'
-import { caseTitle } from '@/modules/study/api/mockData'
 import BackPill from '@/shared/ui/BackPill.vue'
 
 const buildingSprites = import.meta.glob(
@@ -224,7 +223,33 @@ function spriteSrc(id, level) {
 const authStore = useAuthStore()
 const gameStore = useGameStore()
 
-const CASE_LABEL = 'Кейс 2. Блок 3'
+const MODULES = {
+  laboratory: {
+    title: 'Аналитика и статистика',
+    totalSteps: 7,
+    firstStep: 'Математическая статистика, блок 1'
+  },
+  factory: {
+    title: 'Производство',
+    totalSteps: 7,
+    firstStep: 'Экономика предприятия, блок 1'
+  },
+  office: {
+    title: 'Основы и введение',
+    totalSteps: 10,
+    firstStep: 'Введение в экономическую теорию, блок 1'
+  },
+  accounting: {
+    title: 'Бухгалтерский учет',
+    totalSteps: 4,
+    firstStep: 'Бухгалтерский учет, блок 1'
+  },
+  marketing: {
+    title: 'Международные связи',
+    totalSteps: 7,
+    firstStep: 'Маркетинг, блок 1'
+  }
+}
 
 const plotDefs = [
   { id: 'laboratory', title: 'Лаборатория' },
@@ -244,34 +269,6 @@ const plots = computed(() => plotDefs.map((plot) => {
   }
 }))
 
-const buildingInfo = {
-  laboratory: {
-    mastery: '2 / 5 тем',
-    topic: 'Анализ спроса',
-    upgrade: 'Решить кейс «Эластичность цены»'
-  },
-  factory: {
-    mastery: '3 / 5 тем',
-    topic: 'Себестоимость продукции',
-    upgrade: 'Решить кейс «Точка безубыточности»'
-  },
-  office: {
-    mastery: '1 / 5 тем',
-    topic: 'Организационная структура',
-    upgrade: 'Решить кейс «Делегирование»'
-  },
-  accounting: {
-    mastery: '4 / 5 тем',
-    topic: 'Метод двойной записи',
-    upgrade: 'Решить кейс «План счетов»'
-  },
-  marketing: {
-    mastery: '2 / 5 тем',
-    topic: 'Целевая аудитория',
-    upgrade: 'Решить кейс «Позиционирование»'
-  }
-}
-
 const activeBuildingId = ref(null)
 const selectedBuildingId = ref('laboratory')
 const caseOpen = ref(false)
@@ -289,21 +286,47 @@ const playerName = computed(() => authStore.user?.firstName || 'Линад')
 const activePlot = computed(() => plots.value.find((plot) => plot.id === activeBuildingId.value) || null)
 const caseHeading = computed(() => {
   const plot = plots.value.find((item) => item.id === selectedBuildingId.value) || plots.value[0]
-  return `${plot.title}: ${CASE_LABEL}`
+  const moduleTitle = MODULES[plot.id]?.title || ''
+  return `${plot.title}: ${moduleTitle}`
 })
+function splitStepTitle(title) {
+  if (!title) return null
+  const matched = title.match(/^(.*?),\s*блок\s+(\d+)\s*$/i)
+  if (!matched) return null
+  return { name: matched[1], number: matched[2] }
+}
+
+function formatStepTitle(title) {
+  const parts = splitStepTitle(title)
+  if (!parts) return title || ''
+  return `${parts.name}\nБлок ${parts.number}`
+}
+
+function formatPlaqueTitle(title) {
+  const parts = splitStepTitle(title)
+  if (!parts) return title || ''
+  return `${parts.name}, Блок ${parts.number}`
+}
+
 const caseSubtitle = computed(() => {
-  return gameStore.building(selectedBuildingId.value)?.currentTitle || caseTitle(selectedBuildingId.value)
+  const raw = gameStore.building(selectedBuildingId.value)?.currentTitle || MODULES[selectedBuildingId.value]?.firstStep || ''
+  return formatStepTitle(raw)
 })
 const plaqueInfo = computed(() => {
   const live = activePlot.value ? gameStore.building(activePlot.value.id) : null
   if (live) {
     return {
       mastery: live.mastery,
-      topic: live.currentTitle,
+      topic: formatPlaqueTitle(live.currentTitle),
       upgrade: live.nextCondition
     }
   }
-  return buildingInfo[activePlot.value?.id] || buildingInfo.laboratory
+  const moduleInfo = MODULES[activePlot.value?.id] || MODULES.laboratory
+  return {
+    mastery: `0 / ${moduleInfo.totalSteps}`,
+    topic: formatPlaqueTitle(moduleInfo.firstStep),
+    upgrade: 'Пройти теорию и тест'
+  }
 })
 
 onMounted(() => {
@@ -605,6 +628,8 @@ const capitalLabel = computed(() => {
 .case-overlay :deep(.card-title) {
   font-size: clamp(1.35rem, 1.75vw, 1.65rem);
   margin-bottom: clamp(0.9rem, 2vh, 1.4rem);
+  white-space: pre-line;
+  text-align: center;
 }
 
 .plot {
@@ -758,6 +783,10 @@ const capitalLabel = computed(() => {
   line-height: 1.2;
   letter-spacing: -0.02em;
   text-align: center;
+}
+
+.case-subtitle {
+  white-space: pre-line;
 }
 
 .case-subtitle {

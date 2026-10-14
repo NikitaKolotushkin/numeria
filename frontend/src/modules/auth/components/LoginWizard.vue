@@ -24,6 +24,7 @@ import { useAuthStore } from '@/modules/auth/store/useAuthStore'
 import AuthWizardLayout from '@/modules/auth/components/AuthWizardLayout.vue'
 import AuthErrorToast from '@/modules/auth/components/common/AuthErrorToast.vue'
 import LoginStep from '@/modules/auth/components/steps/LoginStep.vue'
+import { isAllowedRegistrationEmail } from '@/modules/auth/api/mockData'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -52,8 +53,8 @@ const handlePrev = () => {
 const handleNext = async () => {
   errorMessage.value = ''
 
-  if (!formData.email.trim() || !formData.email.includes('@')) {
-    errorMessage.value = 'Введите корректный email'
+  if (!isAllowedRegistrationEmail(formData.email)) {
+    errorMessage.value = 'Вход доступен только для почты @guu.ru'
     return
   }
 

@@ -43,30 +43,15 @@ import { ONBOARDING_QUIZ } from '@/modules/auth/api/mockData'
 const props = defineProps({
   modelValue: { type: Array, default: () => [] }
 })
-const emit = defineEmits(['update:modelValue', 'complete'])
+const emit = defineEmits(['update:modelValue'])
 
 const currentQuestionIndex = ref(0)
 const userAnswers = ref([...props.modelValue])
 const currentQuestion = computed(() => ONBOARDING_QUIZ[currentQuestionIndex.value])
 
-let advanceTimer = null
-
 const selectAnswer = (optionIndex) => {
   userAnswers.value[currentQuestionIndex.value] = optionIndex
   emit('update:modelValue', userAnswers.value)
-
-  if (currentQuestionIndex.value >= ONBOARDING_QUIZ.length - 1) {
-    clearTimeout(advanceTimer)
-    advanceTimer = setTimeout(() => {
-      emit('complete')
-    }, 1000)
-    return
-  }
-
-  clearTimeout(advanceTimer)
-  advanceTimer = setTimeout(() => {
-    currentQuestionIndex.value++
-  }, 1000)
 }
 </script>
 

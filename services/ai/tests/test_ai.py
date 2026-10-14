@@ -58,8 +58,33 @@ def test_block_material_and_niche():
     )
     assert opened.status_code == 200
     body = opened.json()
-    assert body["theoryMarkdown"].startswith("Ниша игрока: спортивный клуб.")
+    assert body["theoryMarkdown"].startswith("Ниши игрока: спортивный клуб.")
     assert len(body["questions"]) == 3
+
+
+def test_every_selected_hobby_reaches_the_material():
+    user_id = str(uuid.uuid4())
+    personal = client.post(
+        "/internal/personalize",
+        headers=TOKEN,
+        json={"userId": user_id, "hobbies": ["cinema", "books"], "onboardingAnswers": []},
+    )
+    assert personal.status_code == 200
+    assert personal.json()["niches"] == ["кинотеатр", "книжный магазин"]
+    opened = client.post(
+        "/internal/material",
+        headers=TOKEN,
+        json={
+            "userId": user_id,
+            "kind": "block",
+            "slotTitle": "Маркетинг, блок 1",
+            "disciplineTitle": "Маркетинг",
+        },
+    )
+    assert opened.status_code == 200
+    theory = opened.json()["theoryMarkdown"]
+    assert "кинотеатр" in theory
+    assert "книжный магазин" in theory
 
 
 def test_boss_review_accepts_a_full_answer():

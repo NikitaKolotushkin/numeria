@@ -724,11 +724,23 @@ HOBBY_NICHE = {
 }
 
 
-def niche_for(hobbies: list[str]) -> str:
+def niches_for(hobbies: list[str]) -> list[str]:
+    found = []
     for hobby in hobbies:
-        if hobby in HOBBY_NICHE:
-            return HOBBY_NICHE[hobby]
-    return "малый городской бизнес"
+        label = HOBBY_NICHE.get(str(hobby))
+        if label and label not in found:
+            found.append(label)
+    return found or ["малый городской бизнес"]
+
+
+def niche_phrase(niches: list[str]) -> str:
+    if len(niches) == 1:
+        return niches[0]
+    return ", ".join(niches[:-1]) + " и " + niches[-1]
+
+
+def niche_for(hobbies: list[str]) -> str:
+    return niche_phrase(niches_for(hobbies))
 
 
 def block_material(discipline_title: str, slot_title: str) -> dict | None:
