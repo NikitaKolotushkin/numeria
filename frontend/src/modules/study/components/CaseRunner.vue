@@ -3,18 +3,20 @@
     <div class="case-split-test">
       <p v-if="studyStore.isLoading" class="case-status">Загрузка</p>
       <p v-else-if="studyStore.error" class="case-status">{{ studyStore.error }}</p>
-      <template v-else-if="studyStore.currentCase?.type === 'quiz'">
-        <p v-if="studyStore.theory" class="case-theory">{{ studyStore.theory }}</p>
-        <QuizView
-          :key="studyStore.currentCase.id"
-          :questions="studyStore.questions"
-          :answers="studyStore.answers"
-          :is-complete="studyStore.isComplete"
-          :score="studyStore.score"
-          @answer="studyStore.answerQuestion"
-          @complete="studyStore.complete"
-        />
+      <template v-else-if="studyStore.currentCase?.type === 'quiz' && studyStore.theory && !studyStore.quizStarted">
+        <p class="case-theory">{{ studyStore.theory }}</p>
+        <button type="button" class="theory-next" @click="studyStore.startQuiz">К тесту</button>
       </template>
+      <QuizView
+        v-else-if="studyStore.currentCase?.type === 'quiz'"
+        :key="studyStore.currentCase.id"
+        :questions="studyStore.questions"
+        :answers="studyStore.answers"
+        :is-complete="studyStore.isComplete"
+        :score="studyStore.score"
+        @answer="studyStore.answerQuestion"
+        @complete="studyStore.complete"
+      />
     </div>
     <div v-if="studyStore.currentCase?.type !== 'open'" class="case-split-side"></div>
   </div>
@@ -88,6 +90,20 @@ onUnmounted(() => {
 }
 
 .case-theory {
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.theory-next {
+  min-width: 8.5rem;
+  height: clamp(2.55rem, 5.6vh, 2.9rem);
+  padding: 0 1.75rem;
+  border: none;
+  border-radius: 9999px;
+  background: #061e27;
+  color: #ffffff;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
 }
 </style>

@@ -14,6 +14,7 @@ export const useStudyStore = defineStore('study', () => {
   const fieldError = ref('')
   const isSubmitting = ref(false)
   const isLoading = ref(false)
+  const quizStarted = ref(false)
   const isComplete = ref(false)
   const isRemote = ref(false)
   const score = ref(0)
@@ -30,6 +31,7 @@ export const useStudyStore = defineStore('study', () => {
     isLoading.value = true
     error.value = ''
     isComplete.value = false
+    quizStarted.value = false
     isRemote.value = false
     answers.value = []
     questions.value = []
@@ -89,6 +91,10 @@ export const useStudyStore = defineStore('study', () => {
     } finally {
       if (id === requestId) isLoading.value = false
     }
+  }
+
+  function startQuiz() {
+    quizStarted.value = true
   }
 
   function answerQuestion(questionIndex, optionIndex) {
@@ -157,6 +163,7 @@ export const useStudyStore = defineStore('study', () => {
     isSubmitting.value = false
     isLoading.value = false
     isComplete.value = false
+    quizStarted.value = false
     isRemote.value = false
     score.value = 0
     error.value = ''
@@ -172,9 +179,11 @@ export const useStudyStore = defineStore('study', () => {
     isSubmitting,
     isLoading,
     isComplete,
+    quizStarted,
     score,
     error,
     openCase,
+    startQuiz,
     answerQuestion,
     complete,
     submitBoss,
