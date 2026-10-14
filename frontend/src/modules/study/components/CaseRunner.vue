@@ -1,24 +1,27 @@
 <template>
-  <div v-if="studyStore.currentCase?.type !== 'open'" class="case-split">
-    <div class="case-split-test">
-      <p v-if="studyStore.isLoading" class="case-status">Загрузка</p>
-      <p v-else-if="studyStore.error" class="case-status">{{ studyStore.error }}</p>
-      <template v-else-if="studyStore.currentCase?.type === 'quiz' && studyStore.theory && !studyStore.quizStarted">
-        <p class="case-theory">{{ studyStore.theory }}</p>
-        <button type="button" class="theory-next" @click="studyStore.startQuiz">К тесту</button>
-      </template>
-      <QuizView
-        v-else-if="studyStore.currentCase?.type === 'quiz'"
-        :key="studyStore.currentCase.id"
-        :questions="studyStore.questions"
-        :answers="studyStore.answers"
-        :is-complete="studyStore.isComplete"
-        :score="studyStore.score"
-        @answer="studyStore.answerQuestion"
-        @complete="studyStore.complete"
-      />
+  <div v-if="studyStore.currentCase?.type !== 'open'" class="case-frame">
+    <div class="case-split">
+      <div class="case-split-test">
+        <p v-if="studyStore.isLoading" class="case-status">Загрузка</p>
+        <p v-else-if="studyStore.error" class="case-status">{{ studyStore.error }}</p>
+        <template v-else-if="studyStore.currentCase?.type === 'quiz' && studyStore.theory && !studyStore.quizStarted">
+          <p class="case-theory">{{ studyStore.theory }}</p>
+          <button type="button" class="theory-next" @click="studyStore.startQuiz">К тесту</button>
+        </template>
+        <QuizView
+          v-else-if="studyStore.currentCase?.type === 'quiz'"
+          :key="studyStore.currentCase.id"
+          :questions="studyStore.questions"
+          :answers="studyStore.answers"
+          :is-complete="studyStore.isComplete"
+          :score="studyStore.score"
+          @answer="studyStore.answerQuestion"
+          @complete="studyStore.complete"
+        />
+      </div>
+      <div class="case-split-side"></div>
     </div>
-    <div v-if="studyStore.currentCase?.type !== 'open'" class="case-split-side"></div>
+    <div class="quiz-nav-host"></div>
   </div>
   <BossCaseView
     v-if="!studyStore.isLoading && !studyStore.error && studyStore.currentCase?.type === 'open'"
@@ -61,12 +64,24 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.case-frame {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  gap: clamp(0.85rem, 1.8vh, 1.2rem);
+}
+
 .case-split {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: clamp(1.25rem, 2.8vw, 2.4rem);
-  height: 100%;
+  flex: 1;
   min-height: 0;
+}
+
+.quiz-nav-host:empty {
+  display: none;
 }
 
 .case-split-test,

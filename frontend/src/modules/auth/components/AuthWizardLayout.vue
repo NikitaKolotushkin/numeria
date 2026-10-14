@@ -16,9 +16,9 @@
           @click="$emit('next')"
         >
           <span v-if="isLoading" class="spinner"></span>
-          <svg v-else class="nav-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-            <polyline points="12 5 19 12 12 19"></polyline>
+          <svg v-else class="nav-arrow" viewBox="0 0 48 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="10" y1="12" x2="38" y2="12"></line>
+            <polyline points="31 5 38 12 31 19"></polyline>
           </svg>
         </button>
       </slot>
@@ -97,12 +97,12 @@ defineEmits(['prev', 'next'])
 }
 
 .btn-circle {
-  width: var(--auth-nav-size);
-  border-radius: 50%;
+  width: calc(0.9rem + 1.2rem + 0.7rem + 1.85rem + 1.05rem);
+  border-radius: 9999px;
 }
 
 .nav-arrow {
-  width: 1.2rem;
+  width: 2.4rem;
   height: 1.2rem;
 }
 

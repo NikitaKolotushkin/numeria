@@ -30,11 +30,21 @@
         <span class="option-text">{{ option }}</span>
       </button>
     </div>
+
+    <Teleport to=".quiz-nav-host">
+      <QuizNav
+        v-if="!isComplete"
+        :show-back="currentQuestionIndex > 0"
+        @back="currentQuestionIndex -= 1"
+        @forward="goForward"
+      />
+    </Teleport>
   </div>
 </template>
 
 <script setup>
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, ref } from 'vue'
+import QuizNav from '@/shared/ui/QuizNav.vue'
 
 const props = defineProps({
   questions: { type: Array, required: true },
@@ -48,28 +58,17 @@ const emit = defineEmits(['answer', 'complete'])
 const currentQuestionIndex = ref(0)
 const currentQuestion = computed(() => props.questions[currentQuestionIndex.value])
 
-let advanceTimer = null
-
 const selectAnswer = (optionIndex) => {
   emit('answer', currentQuestionIndex.value, optionIndex)
-
-  if (currentQuestionIndex.value >= props.questions.length - 1) {
-    clearTimeout(advanceTimer)
-    advanceTimer = setTimeout(() => {
-      emit('complete')
-    }, 1000)
-    return
-  }
-
-  clearTimeout(advanceTimer)
-  advanceTimer = setTimeout(() => {
-    currentQuestionIndex.value += 1
-  }, 1000)
 }
 
-onUnmounted(() => {
-  clearTimeout(advanceTimer)
-})
+const goForward = () => {
+  if (currentQuestionIndex.value >= props.questions.length - 1) {
+    emit('complete')
+    return
+  }
+  currentQuestionIndex.value += 1
+}
 </script>
 
 <style scoped>
@@ -78,6 +77,7 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: flex-start;
   gap: clamp(0.85rem, 1.8vh, 1.2rem);
+  height: 100%;
   min-height: 0;
   overflow: auto;
 }

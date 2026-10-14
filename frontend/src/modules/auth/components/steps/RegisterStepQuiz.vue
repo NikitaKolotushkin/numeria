@@ -1,49 +1,57 @@
 <template>
-  <AuthSplitLayout variant="quiz">
-    <template #left>
-      <div class="quiz-info">
-        <div class="quiz-pagination">
-          <button 
-            v-for="(q, idx) in ONBOARDING_QUIZ" 
-            :key="q.id"
-            class="page-btn"
-            :class="{ active: currentQuestionIndex === idx, answered: userAnswers[idx] !== undefined }"
-            @click="currentQuestionIndex = idx"
-          >
-            {{ idx + 1 }}
-          </button>
+  <div class="quiz-step">
+    <AuthSplitLayout variant="quiz">
+      <template #left>
+        <div class="quiz-info">
+          <div class="quiz-pagination">
+            <button
+              v-for="(q, idx) in ONBOARDING_QUIZ"
+              :key="q.id"
+              class="page-btn"
+              :class="{ active: currentQuestionIndex === idx, answered: userAnswers[idx] !== undefined }"
+              @click="currentQuestionIndex = idx"
+            >
+              {{ idx + 1 }}
+            </button>
+          </div>
+
+          <p class="question-text">{{ currentQuestion.question }}</p>
         </div>
+      </template>
 
-        <p class="question-text">{{ currentQuestion.question }}</p>
-      </div>
-    </template>
-
-    <template #right>
-      <div class="options-group">
-        <label 
-          v-for="(opt, optIdx) in currentQuestion.options" 
-          :key="optIdx"
-          class="option-card"
-          :class="{ selected: userAnswers[currentQuestionIndex] === optIdx }"
-          @click="selectAnswer(optIdx)"
-        >
-          <span class="radio-indicator"></span>
-          <span class="option-text">{{ opt }}</span>
-        </label>
-      </div>
-    </template>
-  </AuthSplitLayout>
+      <template #right>
+        <div class="options-group">
+          <label
+            v-for="(opt, optIdx) in currentQuestion.options"
+            :key="optIdx"
+            class="option-card"
+            :class="{ selected: userAnswers[currentQuestionIndex] === optIdx }"
+            @click="selectAnswer(optIdx)"
+          >
+            <span class="radio-indicator"></span>
+            <span class="option-text">{{ opt }}</span>
+          </label>
+        </div>
+      </template>
+    </AuthSplitLayout>
+    <QuizNav
+      :show-back="currentQuestionIndex > 0"
+      @back="currentQuestionIndex -= 1"
+      @forward="goForward"
+    />
+  </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
 import AuthSplitLayout from '@/modules/auth/components/common/AuthSplitLayout.vue'
+import QuizNav from '@/shared/ui/QuizNav.vue'
 import { ONBOARDING_QUIZ } from '@/modules/auth/api/mockData'
 
 const props = defineProps({
   modelValue: { type: Array, default: () => [] }
 })
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue', 'complete'])
 
 const currentQuestionIndex = ref(0)
 const userAnswers = ref([...props.modelValue])
@@ -53,9 +61,25 @@ const selectAnswer = (optionIndex) => {
   userAnswers.value[currentQuestionIndex.value] = optionIndex
   emit('update:modelValue', userAnswers.value)
 }
+
+const goForward = () => {
+  if (currentQuestionIndex.value >= ONBOARDING_QUIZ.length - 1) {
+    emit('complete')
+    return
+  }
+  currentQuestionIndex.value += 1
+}
 </script>
 
 <style scoped>
+.quiz-step {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  gap: clamp(0.85rem, 1.8vh, 1.2rem);
+}
+
 .quiz-info {
   display: flex;
   flex-direction: column;

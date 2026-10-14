@@ -33,6 +33,7 @@
     <RegisterStepQuiz
       v-else-if="currentStep === 4"
       v-model="formData.quizAnswers"
+      @complete="handleNext"
     />
 
     <RegisterStepConsents
