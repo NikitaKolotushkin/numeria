@@ -40,7 +40,7 @@
 | `international` | `foreign` | Международная экономика |
 | `accounting` | `books` | Бухгалтерский учет |
 
-Порядок внутри модуля — `sort_order`, начиная с 0. У каждой дисциплины в пилоте три блока.
+Порядок внутри модуля — `sort_order`, начиная с 0. У каждой дисциплины в пилоте три блока. Заголовок пустого блока — «{название дисциплины}, блок N», где N начинается с 1. Заголовок босса — «Битва с боссом». Текста теории в сиде нет.
 
 ---
 
@@ -49,7 +49,7 @@
 ```text
 users
   id              uuid pk
-  email           citext unique not null
+  email           text unique not null
   password_hash   text not null
   first_name      text not null
   last_name       text not null
@@ -93,7 +93,7 @@ access_denylist
   expires_at  timestamptz not null
 ```
 
-Индекс `access_denylist (expires_at)` нужен для чистки просроченных `jti`. Пароль хранится только как хэш (argon2 или bcrypt). Онбординговые пять ответов не связаны с банком `study`.
+Индекс `access_denylist (expires_at)` нужен для чистки просроченных `jti`. Пароль хранится только как хэш argon2id. Почта перед записью обрезается и приводится к нижнему регистру, поэтому отдельное расширение `citext` не нужно. Онбординговые пять ответов не связаны со слотами `study`.
 
 ---
 
@@ -211,6 +211,15 @@ unique (question_id) where is_correct
 
 Индексы попыток: `(user_id, block_id, created_at desc)` и `(user_id, boss_id, created_at desc)`.
 
+Повтор `POST /internal/retake` с тем же `sourceId` не меняет прогресс. Для этого хранится пара, которой нет в остальных таблицах:
+
+```text
+applied_commands
+  reason      text not null
+  source_id   uuid not null
+  primary key (reason, source_id)
+```
+
 Строки `block_progress` создаются при регистрации на все слоты блоков: первый блок каждого модуля `available`, остальные `locked`. Срез теории и вопросов появляется отдельно, при первом открытии слота, и к регистрации не привязан. Вопрос из чужого среза в попытку не принимается.
 
 Порядок шагов здания: дисциплины по `sort_order`, внутри них блоки по `sort_order`, босс после последнего блока. Следующий блок становится `available` только когда предыдущий `passed` и ни один блок модуля не в `retake_required`. Босс `available`, когда все блоки модуля `passed`. Пересдача ставит этот блок в `retake_required` и босса обратно в `locked`, если босс ещё не `passed`. Сданный босс не отзывается пересдачей блока.
@@ -253,11 +262,11 @@ balance_config
   value  int not null check (value >= 0)
 ```
 
-Сиды `balance_config`: `quiz_capital`, `quiz_xp`, `boss_capital`, `boss_xp`, `crisis_penalty`. Числа — стартовый баланс альфа-теста, не часть формулы уровня.
+Сиды `balance_config`, стартовый баланс альфа-теста, не часть формулы уровня: `quiz_capital = 100`, `quiz_xp = 10`, `boss_capital = 400`, `boss_xp = 30`, `crisis_penalty = 50`.
 
 `retake_required` пишет в журнал строку с нулевыми дельтами. Её `source_id` — id кризиса, который потребовал пересдачу, а не id старой попытки теста. Повтор того же кризиса не снимает шаг второй раз. Новая сдача после пересдачи приходит как `block_passed` с новым `source_id` попытки и снова начисляет награду. Уровень пересчитывается в обоих случаях: при пересдаче `passed_steps` уменьшается на 1, но не ниже 0.
 
-Индекс рейтинга: `players (xp desc, user_id)`.
+Индекс рейтинга: `players (capital desc, user_id)`. Место определяется монетами. При равном капитале выше тот, у кого меньше `user_id`.
 
 `current_title` и `next_condition` денормализованы из `study` в момент события, чтобы плашка здания не ходила в учёбу на каждый кадр карты. Источник истины шага всё равно `study.block_progress`.
 

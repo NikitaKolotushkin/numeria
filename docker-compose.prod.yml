@@ -29,11 +29,12 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${DB_ROOT_PASSWORD:-root_pass}
+      POSTGRES_MULTIPLE_DATABASES: numeria_users,numeria_study,numeria_game,numeria_crisis,numeria_career,numeria_ai,numeria_notifications
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./infrastructure/postgres/init-dbs.sh:/docker-entrypoint-initdb.d/init-dbs.sh:ro
+      - ./infrastructure/postgres/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
     networks:
       - numeria_network
     healthcheck:
@@ -54,7 +55,14 @@ services:
     build:
       context: .
       dockerfile: services/users/Dockerfile
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1
+    environment:
+      DATABASE_URL: postgresql+psycopg://postgres:${DB_ROOT_PASSWORD:-root_pass}@postgres:5432/numeria_users
+      JWT_SECRET: ${JWT_SECRET:-dev-only-change-me-not-for-production}
+      SERVICE_TOKEN: ${SERVICE_TOKEN:-dev-service-token}
+      GAME_BASE_URL: http://numeria_game:8000
+      AI_BASE_URL: http://numeria_ai:8000
+      NOTIFICATIONS_BASE_URL: http://numeria_notifications:8000
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1"
 
   study:
     <<: *microservice-def
@@ -62,7 +70,13 @@ services:
     build:
       context: .
       dockerfile: services/study/Dockerfile
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1
+    environment:
+      DATABASE_URL: postgresql+psycopg://postgres:${DB_ROOT_PASSWORD:-root_pass}@postgres:5432/numeria_study
+      JWT_SECRET: ${JWT_SECRET:-dev-only-change-me-not-for-production}
+      SERVICE_TOKEN: ${SERVICE_TOKEN:-dev-service-token}
+      AI_BASE_URL: http://numeria_ai:8000
+      GAME_BASE_URL: http://numeria_game:8000
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1"
 
   game:
     <<: *microservice-def
@@ -70,7 +84,13 @@ services:
     build:
       context: .
       dockerfile: services/game/Dockerfile
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1
+    environment:
+      DATABASE_URL: postgresql+psycopg://postgres:${DB_ROOT_PASSWORD:-root_pass}@postgres:5432/numeria_game
+      JWT_SECRET: ${JWT_SECRET:-dev-only-change-me-not-for-production}
+      SERVICE_TOKEN: ${SERVICE_TOKEN:-dev-service-token}
+      STUDY_BASE_URL: http://numeria_study:8000
+      USERS_BASE_URL: http://numeria_users:8000
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1"
 
   crisis-engine:
     <<: *microservice-def
