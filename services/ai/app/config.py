@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     gigachat_credentials: str = ""
     gigachat_scope: str = "GIGACHAT_API_PERS"
     gigachat_model: str = "GigaChat-2-Max"
-    gigachat_timeout_seconds: float = 18.0
+    gigachat_timeout_seconds: float = 40.0
 
 
 settings = Settings()

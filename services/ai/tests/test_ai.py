@@ -3,6 +3,7 @@ import uuid
 from fastapi.testclient import TestClient
 
 from app.corpus import BLOCKS, BOSSES
+from app.gigachat import _expiry
 from app.main import app
 from app.service import profiles
 
@@ -12,6 +13,11 @@ TOKEN = {"X-Service-Token": "dev-service-token"}
 
 def setup_function():
     profiles.clear()
+
+
+def test_access_token_expiry_is_unix_seconds():
+    assert _expiry(1_792_005_907_157) == 1_792_005_907.157
+    assert _expiry(1_792_005_907) == 1_792_005_907
 
 
 def test_material_requires_token():

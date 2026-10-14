@@ -2,7 +2,7 @@ import uuid
 
 from app.corpus import HOBBY_NICHE, block_material, boss_case, boss_material, niche_for
 from app.errors import ApiError
-from app.gigachat import review_with_model
+from app.gigachat import generate_material, review_with_model
 
 profiles: dict[uuid.UUID, dict[str, str]] = {}
 
@@ -16,6 +16,16 @@ def personalize(user_id: uuid.UUID, hobbies: list[str], onboarding: list[dict]) 
 
 
 def material(user_id: uuid.UUID, kind: str, slot_title: str, discipline_title: str) -> dict:
+    profile = profiles.get(user_id) or {}
+    generated = generate_material(
+        kind,
+        slot_title,
+        discipline_title,
+        profile.get("niche", ""),
+        profile.get("tone", ""),
+    )
+    if generated is not None:
+        return generated
     if kind == "boss":
         payload = boss_material(discipline_title)
     elif kind == "block":
@@ -24,16 +34,14 @@ def material(user_id: uuid.UUID, kind: str, slot_title: str, discipline_title: s
         payload = None
     if payload is None:
         raise ApiError(504, "ai_timeout", "Не удалось подготовить задание")
-    if kind == "block":
-        profile = profiles.get(user_id)
-        if profile is not None:
-            payload = {
-                **payload,
-                "theoryMarkdown": (
-                    f"Ниша игрока: {profile['niche']}. Тот же материал можно примерять к этому делу.\n\n"
-                    + payload["theoryMarkdown"]
-                ),
-            }
+    if kind == "block" and profile.get("niche"):
+        payload = {
+            **payload,
+            "theoryMarkdown": (
+                f"Ниша игрока: {profile['niche']}. Тот же материал можно примерять к этому делу.\n\n"
+                + payload["theoryMarkdown"]
+            ),
+        }
     return payload
 
 
