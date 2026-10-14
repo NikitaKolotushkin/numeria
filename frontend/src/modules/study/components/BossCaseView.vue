@@ -2,35 +2,48 @@
   <div class="boss-case">
     <p class="boss-prompt">{{ prompt }}</p>
     <div class="boss-side">
-      <textarea
-        :value="draft"
-        class="boss-input"
-        placeholder="Ваш ответ"
-        :disabled="submitting"
-        @input="$emit('update:draft', $event.target.value)"
-      ></textarea>
-      <button
-        type="button"
-        class="boss-submit"
-        :disabled="submitting"
-        @click="$emit('submit')"
-      >
-        {{ submitting ? 'Отправка' : 'Отправить' }}
-      </button>
-      <p v-if="fieldError" class="boss-error">{{ fieldError }}</p>
+      <AIEvaluationCard
+        v-if="review"
+        :score="review.score"
+        :verdict="review.verdict"
+        :review-text="review.reviewText"
+        :growth-zones="review.growthZones"
+        @revise="$emit('revise')"
+      />
+      <template v-else>
+        <textarea
+          :value="draft"
+          class="boss-input"
+          placeholder="Ваш ответ"
+          :disabled="submitting"
+          @input="$emit('update:draft', $event.target.value)"
+        ></textarea>
+        <button
+          type="button"
+          class="boss-submit"
+          :disabled="submitting"
+          @click="$emit('submit')"
+        >
+          {{ submitting ? 'Отправка' : 'Отправить' }}
+        </button>
+        <p v-if="fieldError" class="boss-error">{{ fieldError }}</p>
+      </template>
     </div>
   </div>
 </template>
 
 <script setup>
+import AIEvaluationCard from '@/modules/ai-mentor/components/AIEvaluationCard.vue'
+
 defineProps({
   prompt: { type: String, default: '' },
   draft: { type: String, default: '' },
   submitting: { type: Boolean, default: false },
-  fieldError: { type: String, default: '' }
+  fieldError: { type: String, default: '' },
+  review: { type: Object, default: null }
 })
 
-defineEmits(['update:draft', 'submit'])
+defineEmits(['update:draft', 'submit', 'revise'])
 </script>
 
 <style scoped>

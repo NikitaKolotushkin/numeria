@@ -23,6 +23,7 @@ def create_player(db: Session, user_id: uuid.UUID) -> None:
         return
     now = utcnow()
     db.add(Player(user_id=user_id, capital=0, xp=0, updated_at=now))
+    db.flush()
     for row in study_buildings(user_id):
         db.add(new_building(user_id, row, now))
     try:

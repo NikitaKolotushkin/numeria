@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { studyApi } from '@/modules/study/api/studyApi'
 import { useGameStore } from '@/modules/game/store/useGameStore'
+import { useAIStore } from '@/modules/ai-mentor/store/useAIStore'
 
 export const useStudyStore = defineStore('study', () => {
   const currentCase = ref(null)
@@ -43,6 +44,7 @@ export const useStudyStore = defineStore('study', () => {
     isSubmitting.value = false
     score.value = 0
     currentCase.value = null
+    useAIStore().clear()
 
     try {
       if (!hasSession()) {
@@ -110,14 +112,23 @@ export const useStudyStore = defineStore('study', () => {
     }
     fieldError.value = ''
     isSubmitting.value = true
+    const aiStore = useAIStore()
+    aiStore.isLoading = true
     try {
-      await studyApi.submitBoss(blockId.value, draft.value.trim())
+      const result = await studyApi.submitBoss(blockId.value, draft.value.trim())
+      aiStore.saveReview({
+        score: result.score,
+        verdict: result.verdict,
+        reviewText: result.reviewText,
+        growthZones: result.growthZones || []
+      })
       const gameStore = useGameStore()
       await gameStore.load()
     } catch (err) {
       fieldError.value = err.message || 'Не удалось отправить ответ'
     } finally {
       isSubmitting.value = false
+      aiStore.isLoading = false
     }
   }
 
@@ -167,6 +178,7 @@ export const useStudyStore = defineStore('study', () => {
     isRemote.value = false
     score.value = 0
     error.value = ''
+    useAIStore().clear()
   }
 
   return {

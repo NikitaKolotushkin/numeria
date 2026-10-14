@@ -26,14 +26,17 @@
     :draft="studyStore.draft"
     :submitting="studyStore.isSubmitting"
     :field-error="studyStore.fieldError"
+    :review="aiStore.review"
     @update:draft="studyStore.draft = $event"
     @submit="studyStore.submitBoss"
+    @revise="aiStore.clear()"
   />
 </template>
 
 <script setup>
 import { onMounted, onUnmounted, watch } from 'vue'
 import { useStudyStore } from '@/modules/study/store/useStudyStore'
+import { useAIStore } from '@/modules/ai-mentor/store/useAIStore'
 import QuizView from '@/modules/study/components/QuizView.vue'
 import BossCaseView from '@/modules/study/components/BossCaseView.vue'
 
@@ -42,6 +45,7 @@ const props = defineProps({
 })
 
 const studyStore = useStudyStore()
+const aiStore = useAIStore()
 
 onMounted(() => {
   studyStore.openCase(props.buildingId)
