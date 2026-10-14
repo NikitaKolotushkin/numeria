@@ -102,10 +102,7 @@
               </div>
             </template>
 
-            <div class="case-split">
-              <div class="case-split-test"></div>
-              <div class="case-split-side"></div>
-            </div>
+            <CaseRunner :building-id="selectedBuildingId" />
           </AuthWizardLayout>
         </div>
       </div>
@@ -117,6 +114,8 @@
 import { computed, nextTick, ref } from 'vue'
 import { useAuthStore } from '@/modules/auth/store/useAuthStore'
 import AuthWizardLayout from '@/modules/auth/components/AuthWizardLayout.vue'
+import CaseRunner from '@/modules/study/components/CaseRunner.vue'
+import { caseTitle } from '@/modules/study/api/mockData'
 import BackPill from '@/shared/ui/BackPill.vue'
 
 const buildingSprites = import.meta.glob(
@@ -224,7 +223,6 @@ function spriteSrc(id, level) {
 const authStore = useAuthStore()
 
 const CASE_LABEL = 'Кейс 2. Блок 3'
-const caseSubtitle = 'Подзаголовок кейса'
 
 const plots = [
   { id: 'laboratory', title: 'Лаборатория' },
@@ -289,6 +287,7 @@ const caseHeading = computed(() => {
   const plot = plots.find((item) => item.id === selectedBuildingId.value) || plots[0]
   return `${plot.title}: ${CASE_LABEL}`
 })
+const caseSubtitle = computed(() => caseTitle(selectedBuildingId.value))
 
 function pointOnStage(stage, clientX, clientY) {
   const rect = stage.getBoundingClientRect()
@@ -583,25 +582,6 @@ const capitalLabel = computed(() => {
 .case-overlay :deep(.card-title) {
   font-size: clamp(1.35rem, 1.75vw, 1.65rem);
   margin-bottom: clamp(0.9rem, 2vh, 1.4rem);
-}
-
-.case-split {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: clamp(1.25rem, 2.8vw, 2.4rem);
-  height: 100%;
-  min-height: 0;
-}
-
-.case-split-test,
-.case-split-side {
-  min-width: 0;
-  min-height: 0;
-}
-
-.case-split-side {
-  border-radius: clamp(1.15rem, 1.6vw, 1.55rem);
-  background: #e6ebed;
 }
 
 .plot {
