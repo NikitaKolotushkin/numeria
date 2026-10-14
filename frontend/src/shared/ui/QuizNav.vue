@@ -1,5 +1,5 @@
 <template>
-  <div class="quiz-nav-row" :class="{ 'has-back': showBack }">
+  <div class="quiz-nav-row" :class="{ 'has-back': showBack && showForward, 'only-back': showBack && !showForward }">
     <button
       v-if="showBack"
       type="button"
@@ -13,6 +13,7 @@
       </svg>
     </button>
     <button
+      v-if="showForward"
       type="button"
       class="quiz-nav"
       aria-label="Вперед"
@@ -28,7 +29,8 @@
 
 <script setup>
 defineProps({
-  showBack: { type: Boolean, default: false }
+  showBack: { type: Boolean, default: false },
+  showForward: { type: Boolean, default: true }
 })
 
 defineEmits(['back', 'forward'])
@@ -45,6 +47,10 @@ defineEmits(['back', 'forward'])
 
 .quiz-nav-row.has-back {
   justify-content: space-between;
+}
+
+.quiz-nav-row.only-back {
+  justify-content: flex-start;
 }
 
 .quiz-nav {

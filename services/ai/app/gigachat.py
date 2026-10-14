@@ -49,6 +49,7 @@ def generate_material(
     niche: str,
     tone: str,
     focuses: list[str] | None = None,
+    question_count: int = 3,
 ) -> dict | None:
     setting = niche.strip() or "малый городской бизнес"
     voice = tone.strip() or "конкретный"
@@ -68,12 +69,13 @@ def generate_material(
     elif kind == "block":
         system = (
             "Ты пишешь короткий учебный блок по экономике для студента вуза. "
-            "Теория — два абзаца без списков. Затем ровно три вопроса. "
+            f"Теория — два абзаца без списков. Затем ровно {question_count} вопросов. "
             "У каждого вопроса ровно четыре варианта, и ровно один с isCorrect true. "
             "Верный вариант не ставь всегда первым. "
             "У игрока от одной до шести ниш. У теории и у каждого вопроса своё назначение: "
             "одна ниша или, реже, пара. Варианты ответа остаются в этом назначении. "
             "Остальные интересы игрока в эту часть не добавляй. "
+            "Текст для студента — только теория и вопросы. Не повторяй инструкции, список назначений и слова «ниша игрока». "
             "Учебные определения остаются верными. "
             "Не выдумывай точные статистические цифры и названия реальных компаний. "
             "Верни только JSON с полями theoryMarkdown и questions. "
@@ -88,7 +90,7 @@ def generate_material(
     if content is None:
         return None
     try:
-        return _parse_material(kind, content)
+        return _parse_material(kind, content, question_count)
     except (KeyError, TypeError, ValueError):
         logger.warning("gigachat material payload was not usable")
         return None
@@ -97,7 +99,7 @@ def generate_material(
 def _focus_plan(kind: str, focuses: list[str]) -> str:
     if kind == "boss":
         return f"Назначение кейса: {focuses[0]}."
-    labels = ["Теория", "Вопрос 1", "Вопрос 2", "Вопрос 3"]
+    labels = ["Теория", *[f"Вопрос {index}" for index in range(1, len(focuses))]]
     lines = [f"{label}: {focus}." for label, focus in zip(labels, focuses)]
     return "Назначение ниш, не меняй его:\n" + "\n".join(lines)
 
@@ -183,19 +185,26 @@ def _parse_review(content: str) -> dict:
     return {"score": score, "reviewText": text.strip(), "growthZones": [item.strip() for item in zones[:3]]}
 
 
-def _parse_material(kind: str, content: str) -> dict:
+def _parse_material(kind: str, content: str, question_count: int = 3) -> dict:
     payload = _json_object(content)
     if kind == "boss":
         prompt = payload.get("promptMarkdown")
-        if not isinstance(prompt, str) or len(prompt.strip()) < 80:
+        if not isinstance(prompt, str) or len(prompt.strip()) < 80 or _is_instruction(prompt):
             raise ValueError
         return {"promptMarkdown": prompt.strip()}
     theory = payload.get("theoryMarkdown")
     questions = payload.get("questions")
-    if not isinstance(theory, str) or len(theory.strip()) < 80 or not isinstance(questions, list) or len(questions) < 1:
+    if (
+        not isinstance(theory, str)
+        or len(theory.strip()) < 80
+        or not isinstance(questions, list)
+        or len(questions) < question_count
+    ):
+        raise ValueError
+    if _is_instruction(theory):
         raise ValueError
     parsed = []
-    for question in questions[:3]:
+    for question in questions[:question_count]:
         prompt = question.get("prompt") if isinstance(question, dict) else None
         options = question.get("options") if isinstance(question, dict) else None
         if not isinstance(prompt, str) or not prompt.strip() or not isinstance(options, list) or len(options) != 4:
@@ -212,6 +221,12 @@ def _parse_material(kind: str, content: str) -> dict:
             raise ValueError
         parsed.append({"prompt": prompt.strip(), "options": parsed_options})
     return {"theoryMarkdown": theory.strip(), "questions": parsed}
+
+
+def _is_instruction(text: str) -> bool:
+    folded = text.casefold()
+    markers = ("ниши игрока", "ниша игрока", "назначение ниш", "верни только json", "ты пишешь короткий")
+    return any(marker in folded for marker in markers)
 
 
 def _json_object(content: str) -> dict:

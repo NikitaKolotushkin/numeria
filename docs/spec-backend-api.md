@@ -208,11 +208,18 @@ JSON, кодировка UTF-8. Имена полей в телах — camelCas
   "correctCount": 8,
   "totalCount": 12,
   "score": 67,
-  "passed": false
+  "passed": false,
+  "results": [
+    { "questionId": "uuid", "correctOptionId": "uuid" }
+  ]
 }
 ```
 
-`score = round(correctCount / totalCount * 100)`. `passed` истинен при `score >= 70`. При сдаче статус блока становится `passed`, следующий шаг открывается, в `game` уходит `block_passed` с `sourceId = attemptId`. При провале статус не меняется, награда не шлётся. Какой вариант был верным, ответ не содержит.
+`score = round(correctCount / totalCount * 100)`. `passed` истинен при `score >= 70`. При сдаче статус блока становится `passed`, следующий шаг открывается, в `game` уходит `block_passed` с `sourceId = attemptId`. При провале статус не меняется, награда не шлётся. `results` идёт в порядке вопросов среза и после сдачи называет верный вариант. До сдачи `GET /blocks/{blockId}` по-прежнему не отдаёт `isCorrect`.
+
+### `POST /blocks/{blockId}/regenerate`
+
+Только из `available` или `retake_required`. Сданный и закрытый шаг — 409 `step_locked`. Сервис просит `ai` новый блок, теорию среза не меняет, прежние вопросы помечает неактивными и записывает новые. Ответ 200 — как у `GET /blocks/{blockId}`: та же теория и новый набор вопросов без `isCorrect`. Старые попытки продолжают ссылаться на старые вопросы.
 
 ### `GET /bosses/{bossId}`
 

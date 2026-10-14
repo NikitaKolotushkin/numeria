@@ -1,7 +1,9 @@
 <template>
   <div v-if="studyStore.currentCase?.type !== 'open'" class="case-frame">
     <div class="case-body">
-      <p v-if="studyStore.isLoading" class="case-status">Загрузка</p>
+      <p v-if="studyStore.isLoading" class="case-status case-loading">
+        <span>Загрузка</span><span class="case-loading-dots">{{ loadingDots }}</span>
+      </p>
       <p v-else-if="studyStore.error" class="case-status">{{ studyStore.error }}</p>
       <p
         v-else-if="studyStore.currentCase?.type === 'quiz' && studyStore.theory && !studyStore.quizStarted"
@@ -9,13 +11,16 @@
       >{{ studyStore.theory }}</p>
       <QuizView
         v-else-if="studyStore.currentCase?.type === 'quiz'"
-        :key="studyStore.currentCase.id"
+        :key="`${studyStore.currentCase.id}-${studyStore.quizGeneration}`"
         :questions="studyStore.questions"
         :answers="studyStore.answers"
         :is-complete="studyStore.isComplete"
-        :score="studyStore.score"
+        :passed="studyStore.passed"
+        :correct-indexes="studyStore.correctIndexes"
+        :retrying="studyStore.isSubmitting"
         @answer="studyStore.answerQuestion"
         @complete="studyStore.complete"
+        @retry="studyStore.regenerate"
       />
     </div>
     <button
@@ -41,7 +46,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useStudyStore } from '@/modules/study/store/useStudyStore'
 import { useAIStore } from '@/modules/ai-mentor/store/useAIStore'
 import AuthErrorToast from '@/modules/auth/components/common/AuthErrorToast.vue'
@@ -52,10 +57,33 @@ const props = defineProps({
   buildingId: { type: String, required: true }
 })
 
+const emit = defineEmits(['passed'])
+
 const studyStore = useStudyStore()
 const aiStore = useAIStore()
 
+const LOADING_DOTS = ['', '.', '..', '...']
+const loadingDots = ref('')
+let dotsTimer = null
 let noticeTimer = null
+let passTimer = null
+
+watch(() => studyStore.passed, (passed) => {
+  clearTimeout(passTimer)
+  if (passed !== true) return
+  passTimer = setTimeout(() => emit('passed'), 2500)
+})
+
+watch(() => studyStore.isLoading, (loading) => {
+  clearInterval(dotsTimer)
+  loadingDots.value = ''
+  if (!loading) return
+  let step = 0
+  dotsTimer = setInterval(() => {
+    step = (step + 1) % LOADING_DOTS.length
+    loadingDots.value = LOADING_DOTS[step]
+  }, 400)
+}, { immediate: true })
 
 watch(() => studyStore.notice, (value) => {
   clearTimeout(noticeTimer)
@@ -82,7 +110,9 @@ watch(() => props.buildingId, (buildingId) => {
 })
 
 onUnmounted(() => {
+  clearInterval(dotsTimer)
   clearTimeout(noticeTimer)
+  clearTimeout(passTimer)
   studyStore.closeCase()
 })
 </script>
@@ -107,6 +137,12 @@ onUnmounted(() => {
   display: none;
 }
 
+.case-body:has(.case-loading) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .case-status,
 .case-theory {
   margin: 0;
@@ -114,6 +150,17 @@ onUnmounted(() => {
   font-size: 1.1rem;
   font-weight: 400;
   line-height: 1.45;
+}
+
+.case-loading {
+  display: flex;
+  align-items: baseline;
+}
+
+.case-loading-dots {
+  display: inline-block;
+  width: 1.5em;
+  text-align: left;
 }
 
 .theory-next {

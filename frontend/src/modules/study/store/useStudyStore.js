@@ -19,6 +19,9 @@ export const useStudyStore = defineStore('study', () => {
   const isComplete = ref(false)
   const isRemote = ref(false)
   const score = ref(0)
+  const correctIndexes = ref([])
+  const passed = ref(null)
+  const quizGeneration = ref(0)
   const error = ref('')
   const notice = ref('')
 
@@ -45,6 +48,9 @@ export const useStudyStore = defineStore('study', () => {
     fieldError.value = ''
     isSubmitting.value = false
     score.value = 0
+    correctIndexes.value = []
+    passed.value = null
+    quizGeneration.value = 0
     currentCase.value = null
     useAIStore().clear()
 
@@ -150,9 +156,9 @@ export const useStudyStore = defineStore('study', () => {
   async function finish() {
     if (!isRemote.value) {
       const questionsSource = currentCase.value?.questions || []
-      score.value = questionsSource.reduce((sum, question, index) => {
-        return sum + (answers.value[index] === question.correctAnswerIndex ? 1 : 0)
-      }, 0)
+      correctIndexes.value = questionsSource.map((question) => question.correctAnswerIndex)
+      const correctCount = correctIndexes.value.filter((value, index) => answers.value[index] === value).length
+      passed.value = questions.value.length > 0 && correctCount / questions.value.length >= 0.7
       isComplete.value = true
       return
     }
@@ -162,10 +168,42 @@ export const useStudyStore = defineStore('study', () => {
       optionId: optionIds.value[index]?.[answers.value[index]]
     }))
     const result = await studyApi.submitBlock(blockId.value, payload)
-    score.value = result.correctCount
+    const correctByQuestion = Object.fromEntries(
+      (result.results || []).map((item) => [item.questionId, item.correctOptionId])
+    )
+    correctIndexes.value = questions.value.map((question, index) => (
+      optionIds.value[index]?.indexOf(correctByQuestion[question.id])
+    ))
+    passed.value = result.passed
     isComplete.value = true
     const gameStore = useGameStore()
     await gameStore.load()
+  }
+
+  async function regenerate() {
+    if (passed.value !== false || isSubmitting.value) return
+    isSubmitting.value = true
+    notice.value = ''
+    try {
+      if (isRemote.value) {
+        const block = await studyApi.regenerateBlock(blockId.value)
+        optionIds.value = block.questions.map((question) => question.options.map((option) => option.id))
+        questions.value = block.questions.map((question) => ({
+          id: question.id,
+          question: question.prompt,
+          options: question.options.map((option) => option.body)
+        }))
+      }
+      answers.value = []
+      correctIndexes.value = []
+      passed.value = null
+      isComplete.value = false
+      quizGeneration.value += 1
+    } catch (err) {
+      notice.value = err.message || 'Не удалось обновить тест'
+    } finally {
+      isSubmitting.value = false
+    }
   }
 
   function closeCase() {
@@ -184,6 +222,8 @@ export const useStudyStore = defineStore('study', () => {
     quizStarted.value = false
     isRemote.value = false
     score.value = 0
+    correctIndexes.value = []
+    passed.value = null
     error.value = ''
     notice.value = ''
     useAIStore().clear()
@@ -201,12 +241,16 @@ export const useStudyStore = defineStore('study', () => {
     isComplete,
     quizStarted,
     score,
+    correctIndexes,
+    passed,
+    quizGeneration,
     error,
     notice,
     openCase,
     startQuiz,
     answerQuestion,
     complete,
+    regenerate,
     submitBoss,
     closeCase
   }

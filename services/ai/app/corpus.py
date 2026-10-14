@@ -1,3 +1,6 @@
+import random
+
+
 def question(prompt: str, options: list[str], correct: int) -> dict:
     return {
         "prompt": prompt,
@@ -773,12 +776,20 @@ def _slot_seed(slot_key: str) -> int:
     return total
 
 
-def block_material(discipline_title: str, slot_title: str) -> dict | None:
+def block_material(discipline_title: str, slot_title: str, count: int = 3) -> dict | None:
     number = _block_number(slot_title)
     found = BLOCKS.get((discipline_title, number))
     if found is None:
         return None
-    return {"theoryMarkdown": found["theory"], "questions": found["questions"]}
+    pool = []
+    for block_number in range(1, 4):
+        item = BLOCKS.get((discipline_title, block_number))
+        if item is not None:
+            pool.extend(item["questions"])
+    chosen = pool[:]
+    random.shuffle(chosen)
+    take = min(max(count, 1), len(chosen))
+    return {"theoryMarkdown": found["theory"], "questions": chosen[:take]}
 
 
 def boss_material(module_title: str) -> dict | None:

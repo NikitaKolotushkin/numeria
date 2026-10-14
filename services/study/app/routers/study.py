@@ -11,6 +11,7 @@ from app.service import (
     buildings_snapshot,
     open_block,
     open_boss,
+    regenerate_block,
     submit_block,
     submit_boss,
     track,
@@ -49,6 +50,12 @@ def read_track(building_id: str, user=Depends(current_user), db: Session = Depen
 def read_block(block_id: uuid.UUID, user=Depends(current_user), db: Session = Depends(db_session)):
     user_id, _role = user
     return open_block(db, user_id, block_id)
+
+
+@router.post("/blocks/{block_id}/regenerate")
+def regenerate(block_id: uuid.UUID, user=Depends(current_user), db: Session = Depends(db_session)):
+    user_id, _role = user
+    return regenerate_block(db, user_id, block_id)
 
 
 @router.post("/blocks/{block_id}/attempts")

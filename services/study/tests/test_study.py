@@ -147,10 +147,39 @@ def test_failed_quiz_does_not_open_next(monkeypatch):
         headers=headers,
         json={"answers": [{"questionId": opened["questions"][0]["id"], "optionId": wrong}]},
     )
-    assert submitted.json()["passed"] is False
-    assert submitted.json()["score"] == 0
+    body = submitted.json()
+    assert body["passed"] is False
+    assert body["score"] == 0
+    assert body["results"][0]["questionId"] == opened["questions"][0]["id"]
+    assert body["results"][0]["correctOptionId"] == opened["questions"][0]["options"][1]["id"]
     again = client.get("/tracks/laboratory", headers=headers).json()
     assert again["steps"][1]["status"] == "locked"
+
+
+def test_failed_quiz_can_be_regenerated(monkeypatch):
+    from app.config import settings
+
+    settings.jwt_secret = SECRET
+    monkeypatch.setattr("app.service.fetch_material", material)
+    monkeypatch.setattr("app.service.notify_game", lambda body: None)
+    _user_id, headers = auth()
+    track = client.get("/tracks/laboratory", headers=headers).json()
+    block_id = track["steps"][0]["id"]
+    opened = client.get(f"/blocks/{block_id}", headers=headers).json()
+    wrong = opened["questions"][0]["options"][0]["id"]
+    client.post(
+        f"/blocks/{block_id}/attempts",
+        headers=headers,
+        json={"answers": [{"questionId": opened["questions"][0]["id"], "optionId": wrong}]},
+    )
+    refreshed = client.post(f"/blocks/{block_id}/regenerate", headers=headers)
+    assert refreshed.status_code == 200
+    body = refreshed.json()
+    assert body["theoryMarkdown"] == opened["theoryMarkdown"]
+    assert body["questions"][0]["id"] != opened["questions"][0]["id"]
+    assert "isCorrect" not in refreshed.text
+    denied = client.post(f"/blocks/{track['steps'][1]['id']}/regenerate", headers=headers)
+    assert denied.status_code == 409
 
 
 def test_retake_is_idempotent(monkeypatch):

@@ -1,4 +1,5 @@
 import json
+import random
 import uuid
 from pathlib import Path
 
@@ -57,7 +58,8 @@ def material(user_id: uuid.UUID, kind: str, slot_title: str, discipline_title: s
     niches = list(profile.get("niches") or [])
     if not niches and profile.get("niche"):
         niches = [profile["niche"]]
-    parts = 4 if kind == "block" else 1
+    question_count = random.randint(5, 10) if kind == "block" else 0
+    parts = question_count + 1 if kind == "block" else 1
     focuses = content_focuses(niches, f"{kind}|{discipline_title}|{slot_title}", parts)
     generated = generate_material(
         kind,
@@ -66,34 +68,19 @@ def material(user_id: uuid.UUID, kind: str, slot_title: str, discipline_title: s
         profile.get("niche", ""),
         profile.get("tone", ""),
         focuses,
+        question_count,
     )
     if generated is not None:
         return generated
     if kind == "boss":
         payload = boss_material(discipline_title)
     elif kind == "block":
-        payload = block_material(discipline_title, slot_title)
+        payload = block_material(discipline_title, slot_title, question_count)
     else:
         payload = None
     if payload is None:
         raise ApiError(504, "ai_timeout", "Не удалось подготовить задание")
-    return _paint_focus(payload, focuses)
-
-
-def _paint_focus(payload: dict, focuses: list[str]) -> dict:
-    if not focuses:
-        return payload
-    if "promptMarkdown" in payload:
-        return {**payload, "promptMarkdown": f"Дело: {focuses[0]}.\n\n{payload['promptMarkdown']}"}
-    questions = []
-    for index, question in enumerate(payload.get("questions") or []):
-        focus = focuses[index + 1] if index + 1 < len(focuses) else focuses[0]
-        questions.append({**question, "prompt": f"В деле «{focus}». {question['prompt']}"})
-    return {
-        **payload,
-        "theoryMarkdown": f"Дело: {focuses[0]}.\n\n{payload['theoryMarkdown']}",
-        "questions": questions,
-    }
+    return payload
 
 
 def review(user_id: uuid.UUID, prompt: str, theory: str, answer: str, pass_score: int) -> dict:

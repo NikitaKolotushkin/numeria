@@ -32,6 +32,15 @@ export const studyApi = {
     }
   },
 
+  async regenerateBlock(blockId) {
+    try {
+      const { data } = await apiClient.post(`/study/blocks/${blockId}/regenerate`)
+      return data
+    } catch (error) {
+      throw new Error(apiMessage(error, 'Не удалось обновить тест'))
+    }
+  },
+
   async submitBlock(blockId, answers) {
     try {
       const { data } = await apiClient.post(`/study/blocks/${blockId}/attempts`, { answers })

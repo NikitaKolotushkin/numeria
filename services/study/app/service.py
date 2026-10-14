@@ -130,7 +130,53 @@ def submit_block(db: Session, user_id: uuid.UUID, block_id: uuid.UUID, answers: 
         "totalCount": total_count,
         "score": score,
         "passed": passed,
+        "results": [
+            {
+                "questionId": str(question.id),
+                "correctOptionId": str(next(option.id for option in question.options if option.is_correct)),
+            }
+            for question in questions
+        ],
     }
+
+
+def regenerate_block(db: Session, user_id: uuid.UUID, block_id: uuid.UUID) -> dict:
+    ensure_user(db, user_id)
+    block = db.get(Block, block_id)
+    progress = db.get(BlockProgress, (user_id, block_id)) if block is not None else None
+    if block is None or progress is None:
+        raise ApiError(404, "not_found", "Блок не найден")
+    if progress.status not in {"available", "retake_required"}:
+        raise ApiError(409, "step_locked", "Шаг уже сдан")
+    if db.get(BlockSnapshot, (user_id, block_id)) is None:
+        raise ApiError(409, "step_locked", "Сначала откройте теорию")
+    discipline = db.get(Discipline, block.discipline_id)
+    payload = fetch_material(user_id, "block", block.title, discipline.title)
+    _theory, questions = parse_block_material(payload)
+    for question in load_questions(db, user_id, block_id):
+        question.active = False
+    db.flush()
+    for index, question in enumerate(questions):
+        row = Question(
+            user_id=user_id,
+            block_id=block.id,
+            prompt=question["prompt"],
+            sort_order=index,
+            active=True,
+        )
+        db.add(row)
+        db.flush()
+        for option_index, option in enumerate(question["options"]):
+            db.add(
+                Option(
+                    question_id=row.id,
+                    body=option["body"],
+                    is_correct=option["isCorrect"],
+                    sort_order=option_index,
+                )
+            )
+    db.commit()
+    return open_block(db, user_id, block_id)
 
 
 def open_boss(db: Session, user_id: uuid.UUID, boss_id: uuid.UUID) -> dict:
@@ -351,6 +397,7 @@ def create_block_snapshot(db: Session, user_id: uuid.UUID, block: Block) -> Bloc
             block_id=block.id,
             prompt=question["prompt"],
             sort_order=index,
+            active=True,
         )
         db.add(row)
         db.flush()
@@ -541,7 +588,9 @@ def question_count(db: Session, user_id: uuid.UUID, block_id: uuid.UUID) -> int:
 
 def load_questions(db: Session, user_id: uuid.UUID, block_id: uuid.UUID) -> list[Question]:
     questions = db.scalars(
-        select(Question).where(Question.user_id == user_id, Question.block_id == block_id).order_by(Question.sort_order)
+        select(Question)
+        .where(Question.user_id == user_id, Question.block_id == block_id, Question.active.is_(True))
+        .order_by(Question.sort_order)
     ).all()
     for question in questions:
         question.options.sort(key=lambda option: option.sort_order)

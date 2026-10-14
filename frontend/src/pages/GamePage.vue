@@ -86,8 +86,10 @@
       <div
         v-if="caseOpen"
         class="case-overlay"
+        :class="{ 'is-leaving': caseLeaving }"
         @click.stop
         @pointermove.stop
+        @transitionend="onCaseFadeEnd"
       >
         <div class="case-overlay-panel">
           <AuthWizardLayout
@@ -102,7 +104,7 @@
               </div>
             </template>
 
-            <CaseRunner :building-id="selectedBuildingId" />
+            <CaseRunner :building-id="selectedBuildingId" @passed="fadeCase" />
           </AuthWizardLayout>
         </div>
       </div>
@@ -272,6 +274,7 @@ const plots = computed(() => plotDefs.map((plot) => {
 const activeBuildingId = ref(null)
 const selectedBuildingId = ref('laboratory')
 const caseOpen = ref(false)
+const caseLeaving = ref(false)
 const plaquePoint = ref(null)
 const plaqueEl = ref(null)
 const plaqueReady = ref(false)
@@ -439,8 +442,20 @@ function openCase() {
 }
 
 function closeCase() {
+  caseLeaving.value = false
   caseOpen.value = false
   blurActive.value = false
+}
+
+function fadeCase() {
+  if (!caseOpen.value || caseLeaving.value) return
+  caseLeaving.value = true
+  blurActive.value = false
+}
+
+function onCaseFadeEnd(event) {
+  if (!caseLeaving.value || event.propertyName !== 'opacity') return
+  closeCase()
 }
 
 function onStagePointerMove(event) {
@@ -619,6 +634,13 @@ const capitalLabel = computed(() => {
   justify-content: center;
   padding: clamp(1rem, 4vh, 2rem) clamp(1.25rem, 3vw, 2rem);
   font-size: clamp(16px, 1.8vmin, 20px);
+  opacity: 1;
+  transition: opacity 0.7s ease;
+}
+
+.case-overlay.is-leaving {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .case-overlay-panel {

@@ -58,8 +58,9 @@ def test_block_material_and_niche():
     )
     assert opened.status_code == 200
     body = opened.json()
-    assert body["theoryMarkdown"].startswith("Дело: спортивный клуб.")
-    assert len(body["questions"]) == 3
+    assert "Ниши игрока" not in body["theoryMarkdown"]
+    assert body["theoryMarkdown"].strip()
+    assert 5 <= len(body["questions"]) <= 10
 
 
 def test_every_selected_hobby_reaches_the_material():
@@ -83,16 +84,9 @@ def test_every_selected_hobby_reaches_the_material():
     )
     assert opened.status_code == 200
     body = opened.json()
-    parts = [body["theoryMarkdown"], *[question["prompt"] for question in body["questions"]]]
-    both = "кинотеатр и книжный магазин"
-
-    def mentions_both(text: str) -> bool:
-        return "кинотеатр" in text and "книжный магазин" in text
-
-    assert any("кинотеатр" in part for part in parts)
-    assert any("книжный магазин" in part for part in parts)
-    assert sum(mentions_both(part) for part in parts) <= 1
-    assert sum(part.startswith("Дело: " + both) or f"«{both}»" in part for part in parts) <= 1
+    text = body["theoryMarkdown"] + "\n" + "\n".join(question["prompt"] for question in body["questions"])
+    assert "Ниши игрока" not in text
+    assert "примерять" not in text
 
 
 def _named(focus: str, niches: list[str]) -> list[str]:

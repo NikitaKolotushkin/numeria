@@ -7,14 +7,12 @@
           :key="item.id"
           type="button"
           class="page-btn"
-          :class="{ active: currentQuestionIndex === index }"
+          :class="{ active: currentQuestionIndex === index, wrong: isWrong(index) }"
           @click="currentQuestionIndex = index"
         >
           {{ index + 1 }}
         </button>
       </div>
-
-      <p v-if="isComplete" class="quiz-score">Баллы: {{ score }} из {{ questions.length }}</p>
 
       <p class="question-text">{{ currentQuestion.question }}</p>
     </div>
@@ -25,7 +23,8 @@
         :key="optionIndex"
         type="button"
         class="option-card"
-        :class="{ selected: answers[currentQuestionIndex] === optionIndex }"
+        :class="optionClass(optionIndex)"
+        :disabled="isComplete"
         @click="selectAnswer(optionIndex)"
       >
         <span class="radio-indicator"></span>
@@ -34,12 +33,23 @@
     </div>
 
     <Teleport to=".quiz-nav-host">
-      <QuizNav
-        v-if="!isComplete"
-        :show-back="currentQuestionIndex > 0"
-        @back="currentQuestionIndex -= 1"
-        @forward="goForward"
-      />
+      <div class="quiz-footer">
+        <QuizNav
+          :show-back="currentQuestionIndex > 0"
+          :show-forward="!isComplete || currentQuestionIndex < questions.length - 1"
+          @back="currentQuestionIndex -= 1"
+          @forward="goForward"
+        />
+        <button
+          v-if="isComplete && passed === false"
+          type="button"
+          class="retry-quiz"
+          :disabled="retrying"
+          @click="$emit('retry')"
+        >
+          {{ retrying ? 'Загрузка' : 'Заново' }}
+        </button>
+      </div>
     </Teleport>
   </div>
 </template>
@@ -52,24 +62,44 @@ const props = defineProps({
   questions: { type: Array, required: true },
   answers: { type: Array, default: () => [] },
   isComplete: { type: Boolean, default: false },
-  score: { type: Number, default: 0 }
+  passed: { default: null },
+  correctIndexes: { type: Array, default: () => [] },
+  retrying: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['answer', 'complete'])
+const emit = defineEmits(['answer', 'complete', 'retry'])
 
 const currentQuestionIndex = ref(0)
 const currentQuestion = computed(() => props.questions[currentQuestionIndex.value])
 
+const correctIndex = computed(() => props.correctIndexes[currentQuestionIndex.value])
+
+const isWrong = (index) => {
+  if (!props.isComplete) return false
+  return props.answers[index] !== props.correctIndexes[index]
+}
+
+const optionClass = (optionIndex) => {
+  if (!props.isComplete) {
+    return { selected: props.answers[currentQuestionIndex.value] === optionIndex }
+  }
+  return {
+    correct: optionIndex === correctIndex.value,
+    wrong: props.answers[currentQuestionIndex.value] === optionIndex && optionIndex !== correctIndex.value
+  }
+}
+
 const selectAnswer = (optionIndex) => {
+  if (props.isComplete) return
   emit('answer', currentQuestionIndex.value, optionIndex)
 }
 
 const goForward = () => {
-  if (currentQuestionIndex.value >= props.questions.length - 1) {
-    emit('complete')
+  if (currentQuestionIndex.value < props.questions.length - 1) {
+    currentQuestionIndex.value += 1
     return
   }
-  currentQuestionIndex.value += 1
+  if (!props.isComplete) emit('complete')
 }
 </script>
 
@@ -116,12 +146,10 @@ const goForward = () => {
   color: #ffffff;
 }
 
-.quiz-score {
-  margin: 0;
+.page-btn.wrong,
+.page-btn.active.wrong {
+  background: #f4d7de;
   color: #12202b;
-  font-size: clamp(1.08rem, 1.35vw, 1.22rem);
-  font-weight: 700;
-  line-height: 1.3;
 }
 
 .question-text {
@@ -164,9 +192,24 @@ const goForward = () => {
   background: #e6ebed;
 }
 
+.option-card:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
 .option-card.selected .radio-indicator {
   border-color: #12202b;
   background: #12202b;
+}
+
+.option-card.wrong .radio-indicator {
+  border-color: #f4d7de;
+  background: #f4d7de;
+}
+
+.option-card.correct .radio-indicator {
+  border-color: #d7e8dc;
+  background: #d7e8dc;
 }
 
 .option-text {
@@ -176,6 +219,40 @@ const goForward = () => {
   line-height: 1.45;
 }
 
+.quiz-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 0.75rem;
+}
+
+.quiz-footer :deep(.quiz-nav-row) {
+  flex: 1;
+  width: auto;
+  margin-top: 0;
+}
+
+.retry-quiz {
+  min-width: 8.5rem;
+  height: var(--auth-nav-size, clamp(2.85rem, 6.2vh, 3.35rem));
+  padding: 0 1.75rem;
+  border: none;
+  border-radius: 9999px;
+  background: #061e27;
+  color: #ffffff;
+  font: inherit;
+  font-size: 1.05rem;
+  font-weight: 500;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.retry-quiz:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 @container (max-height: 520px) {
   .quiz-view,
   .quiz-left {
@@ -183,8 +260,7 @@ const goForward = () => {
   }
 
   .question-text,
-  .option-text,
-  .quiz-score {
+  .option-text {
     font-size: 0.92rem;
   }
 

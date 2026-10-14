@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, JSON, String, Text, UniqueConstraint, Uuid
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, JSON, String, Text, UniqueConstraint, Uuid, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
@@ -59,13 +59,24 @@ class BlockSnapshot(Base):
 
 class Question(Base):
     __tablename__ = "questions"
-    __table_args__ = (UniqueConstraint("user_id", "block_id", "sort_order"),)
+    __table_args__ = (
+        Index(
+            "uq_questions_active_slot",
+            "user_id",
+            "block_id",
+            "sort_order",
+            unique=True,
+            sqlite_where=text("active = 1"),
+            postgresql_where=text("active"),
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=new_id)
     user_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
     block_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("blocks.id"), nullable=False)
     prompt: Mapped[str] = mapped_column(Text, nullable=False)
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False)
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
     options: Mapped[list["Option"]] = relationship(back_populates="question")
 
