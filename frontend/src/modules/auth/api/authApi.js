@@ -1,4 +1,5 @@
-import { apiClient } from '@/shared/api/client'
+import axios from 'axios'
+import { apiClient, clearStoredSession, refreshAccess } from '@/shared/api/client'
 
 const POLICY_VERSION = '2026-06-01'
 
@@ -13,6 +14,21 @@ export const authApi = {
       return data
     } catch (error) {
       throw new Error(apiMessage(error, 'Ошибка входа'))
+    }
+  },
+
+  async logout() {
+    const refreshToken = localStorage.getItem('refresh_token')
+    if (!refreshToken) return
+    try {
+      const accessToken = await refreshAccess()
+      await axios.post(
+        `${apiClient.defaults.baseURL}/users/auth/logout`,
+        { refreshToken: localStorage.getItem('refresh_token') },
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      )
+    } catch {
+      clearStoredSession()
     }
   },
 

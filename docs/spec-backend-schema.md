@@ -2,6 +2,8 @@
 
 Границы сервисов: `docs/spec-backend.md`. Тела HTTP: `docs/spec-backend-api.md`. Продукт: `docs/spec-product.md`.
 
+Таблицы `numeria_users`, `numeria_study` и `numeria_game` уже создаются миграциями этих сервисов. Базы `numeria_crisis`, `numeria_career`, `numeria_ai` и `numeria_notifications` в compose названы, таблиц в них ещё нет. Ниже описан полный пилотный состав, включая ещё не собранные базы.
+
 Семь баз на одном Postgres 15. Внешних ключей между базами нет: чужой идентификатор хранится как `uuid` или `text` без `REFERENCES`. Время — `timestamptz`. Деньги и опыт — `integer`. Первичные ключи строк — `uuid`, кроме справочника модулей и дисциплин: у них стабильные текстовые id.
 
 Миграции — Alembic, по одной цепочке на сервис.

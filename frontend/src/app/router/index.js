@@ -20,7 +20,7 @@ const router = createRouter({
       path: '/game',
       name: 'game',
       component: () => import('@/pages/GamePage.vue'),
-      meta: { title: 'Игровое поле | Нумерия' }
+      meta: { title: 'Игровое поле | Нумерия', requiresAuth: true }
     }
   ]
 })
@@ -28,6 +28,11 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   if (to.meta.title) {
     document.title = to.meta.title
+  }
+  const hasSession = Boolean(localStorage.getItem('access_token') && localStorage.getItem('user_data'))
+  if (to.meta.requiresAuth && !hasSession) {
+    next({ name: 'auth', query: { mode: 'login' } })
+    return
   }
   next()
 })

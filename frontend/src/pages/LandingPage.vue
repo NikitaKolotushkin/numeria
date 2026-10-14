@@ -27,11 +27,11 @@
       </div>
       <div class="player-row">
         <img class="player-icon" src="@/assets/images/hub/coin.png" alt="" />
-        <span>{{ authStore.user?.stats?.capital?.toLocaleString('ru-RU') }}</span>
+        <span>{{ capitalLabel }}</span>
       </div>
       <div class="player-row">
         <img class="player-icon" src="@/assets/images/hub/trophy.png" alt="" />
-        <span>Топ-{{ authStore.user?.stats?.rankPosition }}</span>
+        <span>Топ-{{ rankLabel }}</span>
       </div>
     </aside>
 
@@ -75,9 +75,28 @@
 </template>
 
 <script setup>
+  import { computed, onMounted } from 'vue'
   import { useAuthStore } from '@/modules/auth/store/useAuthStore'
+  import { useGameStore } from '@/modules/game/store/useGameStore'
 
   const authStore = useAuthStore()
+  const gameStore = useGameStore()
+
+  const capitalLabel = computed(() => {
+    if (!gameStore.loaded) return '...'
+    return gameStore.capital.toLocaleString('ru-RU')
+  })
+
+  const rankLabel = computed(() => {
+    if (!gameStore.loaded || gameStore.rankPosition == null) return '...'
+    return gameStore.rankPosition
+  })
+
+  onMounted(() => {
+    if (authStore.isAuthenticated) {
+      gameStore.load().catch(() => {})
+    }
+  })
 </script>
 
 <style scoped>
