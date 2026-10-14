@@ -2,7 +2,7 @@ import uuid
 
 from fastapi.testclient import TestClient
 
-from app.corpus import BLOCKS, BOSSES
+from app.corpus import BLOCKS, BOSSES, content_focuses
 from app.gigachat import _expiry
 from app.main import app
 from app.service import profiles
@@ -58,7 +58,7 @@ def test_block_material_and_niche():
     )
     assert opened.status_code == 200
     body = opened.json()
-    assert body["theoryMarkdown"].startswith("Ниши игрока: спортивный клуб.")
+    assert body["theoryMarkdown"].startswith("Дело: спортивный клуб.")
     assert len(body["questions"]) == 3
 
 
@@ -82,9 +82,59 @@ def test_every_selected_hobby_reaches_the_material():
         },
     )
     assert opened.status_code == 200
-    theory = opened.json()["theoryMarkdown"]
-    assert "кинотеатр" in theory
-    assert "книжный магазин" in theory
+    body = opened.json()
+    parts = [body["theoryMarkdown"], *[question["prompt"] for question in body["questions"]]]
+    both = "кинотеатр и книжный магазин"
+
+    def mentions_both(text: str) -> bool:
+        return "кинотеатр" in text and "книжный магазин" in text
+
+    assert any("кинотеатр" in part for part in parts)
+    assert any("книжный магазин" in part for part in parts)
+    assert sum(mentions_both(part) for part in parts) <= 1
+    assert sum(part.startswith("Дело: " + both) or f"«{both}»" in part for part in parts) <= 1
+
+
+def _named(focus: str, niches: list[str]) -> list[str]:
+    return [niche for niche in niches if niche in focus]
+
+
+def test_one_hobby_fills_every_part():
+    focuses = content_focuses(["спортивный клуб"], "Менеджмент, блок 2", 4)
+    assert focuses == ["спортивный клуб"] * 4
+
+
+def test_any_hobby_count_uses_one_niche_or_a_pair():
+    samples = [
+        ["автосервис", "книжный магазин"],
+        ["спортивный клуб", "кинотеатр", "книжный магазин"],
+        [
+            "спортивный клуб",
+            "кинотеатр",
+            "музыкальная площадка",
+            "автосервис",
+            "творческая студия",
+            "книжный магазин",
+        ],
+    ]
+    for niches in samples:
+        seen = set()
+        pairs = 0
+        for index in range(30):
+            focuses = content_focuses(niches, f"Дисциплина, блок {index}", 4)
+            pair_count = 0
+            for focus in focuses:
+                named = _named(focus, niches)
+                assert 1 <= len(named) <= 2
+                if len(named) == 2:
+                    pair_count += 1
+                    assert " и " in focus
+                seen.update(named)
+            assert pair_count <= 1
+            if pair_count:
+                pairs += 1
+        assert seen == set(niches)
+        assert pairs < 12
 
 
 def test_boss_review_accepts_a_full_answer():

@@ -5,7 +5,15 @@ from pathlib import Path
 import httpx
 
 from app.config import settings
-from app.corpus import HOBBY_NICHE, block_material, boss_case, boss_material, niche_phrase, niches_for
+from app.corpus import (
+    HOBBY_NICHE,
+    block_material,
+    boss_case,
+    boss_material,
+    content_focuses,
+    niche_phrase,
+    niches_for,
+)
 from app.errors import ApiError
 from app.gigachat import generate_material, review_with_model
 
@@ -46,12 +54,18 @@ def ensure_profile(user_id: uuid.UUID) -> dict:
 
 def material(user_id: uuid.UUID, kind: str, slot_title: str, discipline_title: str) -> dict:
     profile = ensure_profile(user_id)
+    niches = list(profile.get("niches") or [])
+    if not niches and profile.get("niche"):
+        niches = [profile["niche"]]
+    parts = 4 if kind == "block" else 1
+    focuses = content_focuses(niches, f"{kind}|{discipline_title}|{slot_title}", parts)
     generated = generate_material(
         kind,
         slot_title,
         discipline_title,
         profile.get("niche", ""),
         profile.get("tone", ""),
+        focuses,
     )
     if generated is not None:
         return generated
@@ -63,15 +77,23 @@ def material(user_id: uuid.UUID, kind: str, slot_title: str, discipline_title: s
         payload = None
     if payload is None:
         raise ApiError(504, "ai_timeout", "Не удалось подготовить задание")
-    if kind == "block" and profile.get("niche"):
-        payload = {
-            **payload,
-            "theoryMarkdown": (
-                f"Ниши игрока: {profile['niche']}. Тот же материал можно примерять к каждому из этих дел.\n\n"
-                + payload["theoryMarkdown"]
-            ),
-        }
-    return payload
+    return _paint_focus(payload, focuses)
+
+
+def _paint_focus(payload: dict, focuses: list[str]) -> dict:
+    if not focuses:
+        return payload
+    if "promptMarkdown" in payload:
+        return {**payload, "promptMarkdown": f"Дело: {focuses[0]}.\n\n{payload['promptMarkdown']}"}
+    questions = []
+    for index, question in enumerate(payload.get("questions") or []):
+        focus = focuses[index + 1] if index + 1 < len(focuses) else focuses[0]
+        questions.append({**question, "prompt": f"В деле «{focus}». {question['prompt']}"})
+    return {
+        **payload,
+        "theoryMarkdown": f"Дело: {focuses[0]}.\n\n{payload['theoryMarkdown']}",
+        "questions": questions,
+    }
 
 
 def review(user_id: uuid.UUID, prompt: str, theory: str, answer: str, pass_score: int) -> dict:

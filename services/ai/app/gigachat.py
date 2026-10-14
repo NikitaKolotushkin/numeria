@@ -17,7 +17,13 @@ _CHAT_URL = "https://gigachat.devices.sberbank.ru/api/v1/chat/completions"
 
 
 def review_with_model(prompt: str, theory: str, answer: str, niche: str = "") -> dict | None:
-    setting = f"\nНиши игрока: {niche}. Оценивай ответ в этой обстановке.\n" if niche.strip() else "\n"
+    setting = (
+        f"\nНиши игрока: {niche}. Их может быть от одной до шести. "
+        "Условие использует одну или, реже, две. Оценивай ответ в мире условия "
+        "и не требуй ниши, которых в тексте нет.\n"
+        if niche.strip()
+        else "\n"
+    )
     content = complete(
         (
             "Ты проверяешь открытый ответ студента экономического курса. "
@@ -36,19 +42,28 @@ def review_with_model(prompt: str, theory: str, answer: str, niche: str = "") ->
         return None
 
 
-def generate_material(kind: str, slot_title: str, discipline_title: str, niche: str, tone: str) -> dict | None:
+def generate_material(
+    kind: str,
+    slot_title: str,
+    discipline_title: str,
+    niche: str,
+    tone: str,
+    focuses: list[str] | None = None,
+) -> dict | None:
     setting = niche.strip() or "малый городской бизнес"
     voice = tone.strip() or "конкретный"
+    plan = _focus_plan(kind, focuses or [setting])
     if kind == "boss":
         system = (
             "Ты пишешь открытый бизнес-кейс уровня Junior для студента. "
             "Кейс опирается на учебную тему модуля и требует решения, а не определения. "
-            "Весь текст задания происходит в мире всех переданных ниш сразу: каждая ниша должна быть нужна для решения, а не упомянута для вида. "
+            "У игрока от одной до шести ниш. Весь текст происходит только в назначении: "
+            "это одна ниша или, реже, пара. Остальные интересы не упоминай. "
             "Не выдумывай точные статистические цифры и названия реальных компаний. "
             "Верни только JSON с полем promptMarkdown: связный текст задания на русском, 4-7 предложений."
         )
         user = (
-            f"Модуль: {discipline_title}. Ниши игрока, используй все: {setting}. Тон: {voice}."
+            f"Модуль: {discipline_title}. Тон: {voice}.\n{plan}"
         )
     elif kind == "block":
         system = (
@@ -56,15 +71,16 @@ def generate_material(kind: str, slot_title: str, discipline_title: str, niche: 
             "Теория — два абзаца без списков. Затем ровно три вопроса. "
             "У каждого вопроса ровно четыре варианта, и ровно один с isCorrect true. "
             "Верный вариант не ставь всегда первым. "
-            "Теория, каждый вопрос и каждый вариант должны опираться на все переданные ниши сразу, а не на одну из них. "
-            "Учебные определения остаются верными. Примеры и формулировки бери из всех ниш. "
+            "У игрока от одной до шести ниш. У теории и у каждого вопроса своё назначение: "
+            "одна ниша или, реже, пара. Варианты ответа остаются в этом назначении. "
+            "Остальные интересы игрока в эту часть не добавляй. "
+            "Учебные определения остаются верными. "
             "Не выдумывай точные статистические цифры и названия реальных компаний. "
             "Верни только JSON с полями theoryMarkdown и questions. "
             "Вопрос: prompt и options, вариант: body и isCorrect."
         )
         user = (
-            f"Дисциплина: {discipline_title}. Слот: {slot_title}. "
-            f"Ниши игрока, используй все: {setting}. Тон: {voice}."
+            f"Дисциплина: {discipline_title}. Слот: {slot_title}. Тон: {voice}.\n{plan}"
         )
     else:
         return None
@@ -76,6 +92,14 @@ def generate_material(kind: str, slot_title: str, discipline_title: str, niche: 
     except (KeyError, TypeError, ValueError):
         logger.warning("gigachat material payload was not usable")
         return None
+
+
+def _focus_plan(kind: str, focuses: list[str]) -> str:
+    if kind == "boss":
+        return f"Назначение кейса: {focuses[0]}."
+    labels = ["Теория", "Вопрос 1", "Вопрос 2", "Вопрос 3"]
+    lines = [f"{label}: {focus}." for label, focus in zip(labels, focuses)]
+    return "Назначение ниш, не меняй его:\n" + "\n".join(lines)
 
 
 def complete(system: str, user: str) -> str | None:

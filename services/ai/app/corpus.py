@@ -743,6 +743,36 @@ def niche_for(hobbies: list[str]) -> str:
     return niche_phrase(niches_for(hobbies))
 
 
+def content_focuses(niches: list[str], slot_key: str, parts: int) -> list[str]:
+    cleaned = []
+    for niche in niches:
+        label = str(niche).strip()
+        if label and label not in cleaned:
+            cleaned.append(label)
+    if parts < 1:
+        return []
+    if not cleaned:
+        return ["малый городской бизнес"] * parts
+    if len(cleaned) == 1:
+        return cleaned * parts
+    seed = _slot_seed(slot_key)
+    start = seed % len(cleaned)
+    focuses = [cleaned[(start + index) % len(cleaned)] for index in range(parts)]
+    if seed % 5 == 0:
+        pair_at = seed % parts
+        first = cleaned[(start + pair_at) % len(cleaned)]
+        second = cleaned[(start + pair_at + 1) % len(cleaned)]
+        focuses[pair_at] = niche_phrase([first, second])
+    return focuses
+
+
+def _slot_seed(slot_key: str) -> int:
+    total = 0
+    for char in slot_key:
+        total = (total * 33 + ord(char)) % 10007
+    return total
+
+
 def block_material(discipline_title: str, slot_title: str) -> dict | None:
     number = _block_number(slot_title)
     found = BLOCKS.get((discipline_title, number))
