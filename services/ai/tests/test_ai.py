@@ -15,6 +15,28 @@ def setup_function():
     profiles.clear()
 
 
+def test_quiz_explain_falls_back_without_model(monkeypatch):
+    monkeypatch.setattr("app.service.explain_misses", lambda theory, misses: None)
+    response = client.post(
+        "/internal/quiz-explain",
+        headers=TOKEN,
+        json={
+            "theoryMarkdown": "Среднее считают по всей выборке.",
+            "misses": [{"prompt": "Что такое среднее?", "chosen": "одна группа", "correct": "вся выборка"}],
+        },
+    )
+    assert response.status_code == 200
+    text = response.json()["explanations"][0]
+    assert "одна группа" in text
+    assert "вся выборка" in text
+
+
+def test_explain_parser_strips_marks():
+    from app.gigachat import _parse_explanations
+
+    assert _parse_explanations('{"explanations":["Это **среднее**."]}', 1) == ["Это среднее."]
+
+
 def test_access_token_expiry_is_unix_seconds():
     assert _expiry(1_792_005_907_157) == 1_792_005_907.157
     assert _expiry(1_792_005_907) == 1_792_005_907

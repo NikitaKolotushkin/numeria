@@ -1,6 +1,6 @@
 <template>
   <div class="boss-case">
-    <p class="boss-prompt">{{ prompt }}</p>
+    <p class="boss-prompt">{{ plainPrompt }}</p>
     <div class="boss-side">
       <AIEvaluationCard
         v-if="review"
@@ -35,9 +35,11 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import AIEvaluationCard from '@/modules/ai-mentor/components/AIEvaluationCard.vue'
+import { stripInlineMarkdown } from '@/shared/text/plainText'
 
-defineProps({
+const props = defineProps({
   prompt: { type: String, default: '' },
   draft: { type: String, default: '' },
   submitting: { type: Boolean, default: false },
@@ -46,6 +48,8 @@ defineProps({
 })
 
 defineEmits(['update:draft', 'submit', 'revise'])
+
+const plainPrompt = computed(() => stripInlineMarkdown(props.prompt))
 </script>
 
 <style scoped>

@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.catalog import seed_catalog
-from app.clients import fetch_material, fetch_review, notify_game
+from app.clients import fetch_explanations, fetch_material, fetch_review, notify_game
 from app.config import settings
 from app.errors import ApiError
 from app.models import (
@@ -124,6 +124,8 @@ def submit_block(db: Session, user_id: uuid.UUID, block_id: uuid.UUID, answers: 
     db.commit()
     if passed:
         notify_game(progress_body(db, user_id, module_of_block(db, block), "block_passed", attempt.id))
+    snapshot = db.get(BlockSnapshot, (user_id, block_id))
+    explanations = _explanations_for(snapshot.theory_markdown if snapshot else "", questions, chosen)
     return {
         "attemptId": str(attempt.id),
         "correctCount": correct_count,
@@ -134,10 +136,33 @@ def submit_block(db: Session, user_id: uuid.UUID, block_id: uuid.UUID, answers: 
             {
                 "questionId": str(question.id),
                 "correctOptionId": str(next(option.id for option in question.options if option.is_correct)),
+                "explanation": explanations.get(question.id, ""),
             }
             for question in questions
         ],
     }
+
+
+def _explanations_for(theory: str, questions: list[Question], chosen: dict[uuid.UUID, Option]) -> dict[uuid.UUID, str]:
+    misses = []
+    missed_ids = []
+    for question in questions:
+        picked = chosen[question.id]
+        if picked.is_correct:
+            continue
+        correct = next(option for option in question.options if option.is_correct)
+        misses.append({"prompt": question.prompt, "chosen": picked.body, "correct": correct.body})
+        missed_ids.append(question.id)
+    if not misses:
+        return {}
+    texts = fetch_explanations(theory, misses)
+    result = {}
+    for index, question_id in enumerate(missed_ids):
+        miss = misses[index]
+        fallback = f"Ответ «{miss['chosen']}» не следует из теории. Верно: «{miss['correct']}»."
+        text = texts[index].strip() if texts and index < len(texts) and texts[index].strip() else fallback
+        result[question_id] = text
+    return result
 
 
 def regenerate_block(db: Session, user_id: uuid.UUID, block_id: uuid.UUID) -> dict:
@@ -152,7 +177,9 @@ def regenerate_block(db: Session, user_id: uuid.UUID, block_id: uuid.UUID) -> di
         raise ApiError(409, "step_locked", "Сначала откройте теорию")
     discipline = db.get(Discipline, block.discipline_id)
     payload = fetch_material(user_id, "block", block.title, discipline.title)
-    _theory, questions = parse_block_material(payload)
+    theory, questions = parse_block_material(payload)
+    snapshot = db.get(BlockSnapshot, (user_id, block_id))
+    snapshot.theory_markdown = theory
     for question in load_questions(db, user_id, block_id):
         question.active = False
     db.flush()

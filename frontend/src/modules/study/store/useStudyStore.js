@@ -20,6 +20,8 @@ export const useStudyStore = defineStore('study', () => {
   const isRemote = ref(false)
   const score = ref(0)
   const correctIndexes = ref([])
+  const explanations = ref([])
+  const isReviewing = ref(false)
   const passed = ref(null)
   const quizGeneration = ref(0)
   const error = ref('')
@@ -49,6 +51,8 @@ export const useStudyStore = defineStore('study', () => {
     isSubmitting.value = false
     score.value = 0
     correctIndexes.value = []
+    explanations.value = []
+    isReviewing.value = false
     passed.value = null
     quizGeneration.value = 0
     currentCase.value = null
@@ -141,15 +145,19 @@ export const useStudyStore = defineStore('study', () => {
   }
 
   async function complete() {
+    if (isReviewing.value) return
     const unanswered = questions.value.some((_, index) => answers.value[index] === undefined)
     if (unanswered) {
       notice.value = 'Ответьте на все вопросы теста'
       return
     }
+    if (isRemote.value) isReviewing.value = true
     try {
       await finish()
     } catch (err) {
       notice.value = err.message || 'Не удалось отправить ответы'
+    } finally {
+      isReviewing.value = false
     }
   }
 
@@ -159,6 +167,12 @@ export const useStudyStore = defineStore('study', () => {
       correctIndexes.value = questionsSource.map((question) => question.correctAnswerIndex)
       const correctCount = correctIndexes.value.filter((value, index) => answers.value[index] === value).length
       passed.value = questions.value.length > 0 && correctCount / questions.value.length >= 0.7
+      explanations.value = questions.value.map((question, index) => {
+        if (answers.value[index] === correctIndexes.value[index]) return ''
+        const chosen = question.options[answers.value[index]] || ''
+        const correct = question.options[correctIndexes.value[index]] || ''
+        return `Ответ «${chosen}» не следует из теории. Верно: «${correct}».`
+      })
       isComplete.value = true
       return
     }
@@ -175,6 +189,10 @@ export const useStudyStore = defineStore('study', () => {
       optionIds.value[index]?.indexOf(correctByQuestion[question.id])
     ))
     passed.value = result.passed
+    explanations.value = questions.value.map((question) => {
+      const row = (result.results || []).find((item) => item.questionId === question.id)
+      return row?.explanation || ''
+    })
     isComplete.value = true
     const gameStore = useGameStore()
     await gameStore.load()
@@ -196,6 +214,7 @@ export const useStudyStore = defineStore('study', () => {
       }
       answers.value = []
       correctIndexes.value = []
+      explanations.value = []
       passed.value = null
       isComplete.value = false
       quizGeneration.value += 1
@@ -223,6 +242,8 @@ export const useStudyStore = defineStore('study', () => {
     isRemote.value = false
     score.value = 0
     correctIndexes.value = []
+    explanations.value = []
+    isReviewing.value = false
     passed.value = null
     error.value = ''
     notice.value = ''
@@ -242,6 +263,8 @@ export const useStudyStore = defineStore('study', () => {
     quizStarted,
     score,
     correctIndexes,
+    explanations,
+    isReviewing,
     passed,
     quizGeneration,
     error,

@@ -104,8 +104,13 @@ def test_quiz_pass_opens_next_block(monkeypatch):
 
     settings.jwt_secret = SECRET
     calls = []
+    explain_calls = []
     monkeypatch.setattr("app.service.fetch_material", material)
     monkeypatch.setattr("app.service.notify_game", lambda body: calls.append(body))
+    monkeypatch.setattr(
+        "app.service.fetch_explanations",
+        lambda theory, misses: explain_calls.append(misses) or ["не должно вызваться"],
+    )
     _user_id, headers = auth()
     track = client.get("/tracks/laboratory", headers=headers).json()
     block_id = track["steps"][0]["id"]
@@ -124,6 +129,8 @@ def test_quiz_pass_opens_next_block(monkeypatch):
     assert submitted.status_code == 200
     assert submitted.json()["passed"] is True
     assert submitted.json()["score"] == 100
+    assert submitted.json()["results"][0]["explanation"] == ""
+    assert explain_calls == []
     again = client.get("/tracks/laboratory", headers=headers).json()
     assert again["steps"][0]["status"] == "passed"
     assert again["steps"][1]["status"] == "available"
@@ -137,6 +144,10 @@ def test_failed_quiz_does_not_open_next(monkeypatch):
     settings.jwt_secret = SECRET
     monkeypatch.setattr("app.service.fetch_material", material)
     monkeypatch.setattr("app.service.notify_game", lambda body: None)
+    monkeypatch.setattr(
+        "app.service.fetch_explanations",
+        lambda theory, misses: ["Среднее считают по всей выборке, а не по одной группе."],
+    )
     _user_id, headers = auth()
     track = client.get("/tracks/laboratory", headers=headers).json()
     block_id = track["steps"][0]["id"]
@@ -152,6 +163,7 @@ def test_failed_quiz_does_not_open_next(monkeypatch):
     assert body["score"] == 0
     assert body["results"][0]["questionId"] == opened["questions"][0]["id"]
     assert body["results"][0]["correctOptionId"] == opened["questions"][0]["options"][1]["id"]
+    assert body["results"][0]["explanation"] == "Среднее считают по всей выборке, а не по одной группе."
     again = client.get("/tracks/laboratory", headers=headers).json()
     assert again["steps"][1]["status"] == "locked"
 
@@ -162,6 +174,7 @@ def test_failed_quiz_can_be_regenerated(monkeypatch):
     settings.jwt_secret = SECRET
     monkeypatch.setattr("app.service.fetch_material", material)
     monkeypatch.setattr("app.service.notify_game", lambda body: None)
+    monkeypatch.setattr("app.service.fetch_explanations", lambda theory, misses: None)
     _user_id, headers = auth()
     track = client.get("/tracks/laboratory", headers=headers).json()
     block_id = track["steps"][0]["id"]

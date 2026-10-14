@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.deps import require_service
 from app.errors import ApiError
-from app.service import crisis_draft, ensure_profile, material, personalize, review
+from app.service import crisis_draft, ensure_profile, explain_quiz, material, personalize, review
 
 router = APIRouter(dependencies=[Depends(require_service)])
 
@@ -40,6 +40,19 @@ class ReviewIn(BaseModel):
     pass_score: int = Field(alias="passScore")
 
 
+class QuizMissIn(BaseModel):
+    prompt: str
+    chosen: str
+    correct: str
+
+
+class QuizExplainIn(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    theory_markdown: str = Field(alias="theoryMarkdown")
+    misses: list[QuizMissIn]
+
+
 class CrisisIn(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
@@ -67,6 +80,16 @@ def review_route(body: ReviewIn):
     if not body.answer_text.strip() or not body.prompt_markdown.strip():
         raise ApiError(422, "validation_error", "Проверьте заполненные поля")
     return review(body.user_id, body.prompt_markdown, body.theory_markdown, body.answer_text, body.pass_score)
+
+
+@router.post("/internal/quiz-explain")
+def quiz_explain_route(body: QuizExplainIn):
+    if not body.theory_markdown.strip() or not body.misses:
+        raise ApiError(422, "validation_error", "Проверьте заполненные поля")
+    return explain_quiz(
+        body.theory_markdown,
+        [miss.model_dump() for miss in body.misses],
+    )
 
 
 @router.post("/internal/crisis-draft")

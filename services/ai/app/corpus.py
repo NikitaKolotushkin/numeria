@@ -778,18 +778,31 @@ def _slot_seed(slot_key: str) -> int:
 
 def block_material(discipline_title: str, slot_title: str, count: int = 3) -> dict | None:
     number = _block_number(slot_title)
-    found = BLOCKS.get((discipline_title, number))
-    if found is None:
+    if (discipline_title, number) not in BLOCKS:
         return None
-    pool = []
+    tagged = []
     for block_number in range(1, 4):
         item = BLOCKS.get((discipline_title, block_number))
-        if item is not None:
-            pool.extend(item["questions"])
-    chosen = pool[:]
-    random.shuffle(chosen)
-    take = min(max(count, 1), len(chosen))
-    return {"theoryMarkdown": found["theory"], "questions": chosen[:take]}
+        if item is None:
+            continue
+        for question in item["questions"]:
+            tagged.append((item["theory"], question))
+    if not tagged:
+        return None
+    random.shuffle(tagged)
+    chosen = tagged[:min(max(count, 1), len(tagged))]
+    theories = []
+    own = BLOCKS[(discipline_title, number)]["theory"]
+    for theory, _question in chosen:
+        if theory not in theories:
+            theories.append(theory)
+    if own in theories:
+        theories.remove(own)
+        theories.insert(0, own)
+    return {
+        "theoryMarkdown": "\n\n".join(theories),
+        "questions": [question for _theory, question in chosen],
+    }
 
 
 def boss_material(module_title: str) -> dict | None:

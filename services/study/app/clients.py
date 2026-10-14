@@ -44,6 +44,21 @@ def fetch_review(
     )
 
 
+def fetch_explanations(theory: str, misses: list[dict]) -> list[str] | None:
+    try:
+        payload = _post_ai(
+            "/internal/quiz-explain",
+            {"theoryMarkdown": theory, "misses": misses},
+        )
+    except ApiError:
+        logger.warning("quiz explanation call failed")
+        return None
+    items = payload.get("explanations") if isinstance(payload, dict) else None
+    if not isinstance(items, list):
+        return None
+    return [item.strip() if isinstance(item, str) else "" for item in items]
+
+
 def notify_game(body: dict) -> None:
     if not settings.game_base_url:
         return

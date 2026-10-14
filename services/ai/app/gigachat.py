@@ -42,6 +42,35 @@ def review_with_model(prompt: str, theory: str, answer: str, niche: str = "") ->
         return None
 
 
+def explain_misses(theory: str, misses: list[dict]) -> list[str] | None:
+    if not misses:
+        return []
+    numbered = []
+    for index, miss in enumerate(misses, start=1):
+        numbered.append(
+            f"{index}. Вопрос: {miss.get('prompt', '')}\n"
+            f"Выбранный ответ: {miss.get('chosen', '')}\n"
+            f"Верный ответ: {miss.get('correct', '')}"
+        )
+    content = complete(
+        (
+            "Ты объясняешь студенту ошибку в тесте по экономике. "
+            "Для каждого пункта напиши 2-3 предложения: почему выбранный ответ неверен "
+            "и почему верный следует из теории. Не добавляй факты, которых нет в теории. "
+            "Без markdown, звёздочек и заголовков. "
+            "Верни только JSON с полем explanations: список строк в том же порядке и той же длины."
+        ),
+        f"Теория:\n{theory}\n\nОшибки:\n" + "\n\n".join(numbered),
+    )
+    if content is None:
+        return None
+    try:
+        return _parse_explanations(content, len(misses))
+    except (KeyError, TypeError, ValueError):
+        logger.warning("gigachat quiz explanation was not usable")
+        return None
+
+
 def generate_material(
     kind: str,
     slot_title: str,
@@ -68,14 +97,23 @@ def generate_material(
         )
     elif kind == "block":
         system = (
-            "Ты пишешь короткий учебный блок по экономике для студента вуза. "
-            f"Теория — два абзаца без списков. Затем ровно {question_count} вопросов. "
+            "Ты пишешь учебный блок по экономике для студента вуза. "
+            "Сначала теория, потом ровно "
+            f"{question_count} вопросов. "
+            "Теория — развёрнутый конспект с заголовками markdown второго уровня. "
+            "Четыре части, между частями пустая строка: "
+            "что это такое; как применять, отдельным абзацем на каждый шаг; "
+            "пример на каждую нишу, которая назначена вопросам; типичная ошибка. "
+            "Объём теории не меньше 1500 знаков. "
             "У каждого вопроса ровно четыре варианта, и ровно один с isCorrect true. "
             "Верный вариант не ставь всегда первым. "
-            "У игрока от одной до шести ниш. У теории и у каждого вопроса своё назначение: "
-            "одна ниша или, реже, пара. Варианты ответа остаются в этом назначении. "
-            "Остальные интересы игрока в эту часть не добавляй. "
-            "Текст для студента — только теория и вопросы. Не повторяй инструкции, список назначений и слова «ниша игрока». "
+            "Каждый вопрос и каждый верный вариант должны следовать из теории. "
+            "Нельзя спрашивать термин, пример, сравнение или вывод, которых в теории нет. "
+            "Неверные варианты — правдоподобные ошибки про то же содержание, а не новые факты. "
+            "У вопроса одна назначенная ниша или, реже, пара. Остальные интересы игрока не добавляй. "
+            "Заголовки частей помечай только решётками markdown. "
+            "Жирный, курсив, код и звёздочки не используй. "
+            "Не повторяй инструкции, список назначений и слова «ниша игрока». "
             "Учебные определения остаются верными. "
             "Не выдумывай точные статистические цифры и названия реальных компаний. "
             "Верни только JSON с полями theoryMarkdown и questions. "
@@ -99,9 +137,19 @@ def generate_material(
 def _focus_plan(kind: str, focuses: list[str]) -> str:
     if kind == "boss":
         return f"Назначение кейса: {focuses[0]}."
-    labels = ["Теория", *[f"Вопрос {index}" for index in range(1, len(focuses))]]
-    lines = [f"{label}: {focus}." for label, focus in zip(labels, focuses)]
-    return "Назначение ниш, не меняй его:\n" + "\n".join(lines)
+    question_focuses = focuses[1:] or focuses
+    covered = []
+    for focus in question_focuses:
+        for part in str(focus).split(" и "):
+            label = part.strip()
+            if label and label not in covered:
+                covered.append(label)
+    lines = [
+        "Теория разбирает отдельный пример для каждой ниши вопросов: " + "; ".join(covered) + ".",
+        *[f"Вопрос {index}: {focus}." for index, focus in enumerate(question_focuses, start=1)],
+        "Вопрос проверяет только правила и пример теории для своей ниши.",
+    ]
+    return "Назначение, не включай эти строки в текст для студента:\n" + "\n".join(lines)
 
 
 def complete(system: str, user: str) -> str | None:
@@ -171,6 +219,19 @@ def _expiry(raw) -> float:
     return time.time() + 25 * 60
 
 
+def _parse_explanations(content: str, count: int) -> list[str]:
+    payload = _json_object(content)
+    items = payload.get("explanations")
+    if not isinstance(items, list) or len(items) < count:
+        raise ValueError
+    texts = []
+    for item in items[:count]:
+        if not isinstance(item, str) or not item.strip():
+            raise ValueError
+        texts.append(_clean_student_text(item))
+    return texts
+
+
 def _parse_review(content: str) -> dict:
     payload = _json_object(content)
     score = int(payload["score"])
@@ -191,12 +252,12 @@ def _parse_material(kind: str, content: str, question_count: int = 3) -> dict:
         prompt = payload.get("promptMarkdown")
         if not isinstance(prompt, str) or len(prompt.strip()) < 80 or _is_instruction(prompt):
             raise ValueError
-        return {"promptMarkdown": prompt.strip()}
+        return {"promptMarkdown": _clean_student_text(prompt)}
     theory = payload.get("theoryMarkdown")
     questions = payload.get("questions")
     if (
         not isinstance(theory, str)
-        or len(theory.strip()) < 80
+        or len(theory.strip()) < 800
         or not isinstance(questions, list)
         or len(questions) < question_count
     ):
@@ -216,11 +277,30 @@ def _parse_material(kind: str, content: str, question_count: int = 3) -> dict:
                 raise ValueError
             is_correct = option.get("isCorrect") is True
             correct += int(is_correct)
-            parsed_options.append({"body": option["body"].strip(), "isCorrect": is_correct})
+            parsed_options.append({"body": _clean_student_text(option["body"]), "isCorrect": is_correct})
         if correct != 1:
             raise ValueError
-        parsed.append({"prompt": prompt.strip(), "options": parsed_options})
-    return {"theoryMarkdown": theory.strip(), "questions": parsed}
+        parsed.append({"prompt": _clean_student_text(prompt), "options": parsed_options})
+    return {"theoryMarkdown": _clean_student_text(theory), "questions": parsed}
+
+
+def _strip_inline_markdown(text: str) -> str:
+    cleaned = re.sub(r"`([^`]*)`", r"\1", text)
+    cleaned = re.sub(r"\*\*(.+?)\*\*", r"\1", cleaned, flags=re.DOTALL)
+    cleaned = re.sub(r"__(.+?)__", r"\1", cleaned, flags=re.DOTALL)
+    cleaned = re.sub(r"(?<!\*)\*(?!\*)([^*\n]+)(?<!\*)\*(?!\*)", r"\1", cleaned)
+    return cleaned.replace("**", "").replace("__", "").replace("`", "").replace("*", "")
+
+
+def _clean_student_text(text: str) -> str:
+    lines = []
+    for line in text.splitlines():
+        heading = re.match(r"^(\s{0,3}#{1,6}\s+)(.*)$", line)
+        if heading:
+            lines.append(heading.group(1) + _strip_inline_markdown(heading.group(2)).strip())
+        else:
+            lines.append(_strip_inline_markdown(line))
+    return "\n".join(lines).strip()
 
 
 def _is_instruction(text: str) -> bool:

@@ -16,7 +16,7 @@ from app.corpus import (
     niches_for,
 )
 from app.errors import ApiError
-from app.gigachat import generate_material, review_with_model
+from app.gigachat import explain_misses, generate_material, review_with_model
 
 profiles: dict[uuid.UUID, dict] = {}
 
@@ -81,6 +81,17 @@ def material(user_id: uuid.UUID, kind: str, slot_title: str, discipline_title: s
     if payload is None:
         raise ApiError(504, "ai_timeout", "Не удалось подготовить задание")
     return payload
+
+
+def explain_quiz(theory: str, misses: list[dict]) -> dict:
+    texts = explain_misses(theory, misses)
+    if texts is None:
+        texts = [
+            f"Ответ «{miss.get('chosen', '').strip()}» не следует из теории. "
+            f"Верно: «{miss.get('correct', '').strip()}»."
+            for miss in misses
+        ]
+    return {"explanations": texts}
 
 
 def review(user_id: uuid.UUID, prompt: str, theory: str, answer: str, pass_score: int) -> dict:

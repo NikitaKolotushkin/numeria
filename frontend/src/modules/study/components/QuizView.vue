@@ -14,7 +14,11 @@
         </button>
       </div>
 
-      <p class="question-text">{{ currentQuestion.question }}</p>
+      <p class="question-text">{{ stripInlineMarkdown(currentQuestion.question) }}</p>
+      <p
+        v-if="isWrong(currentQuestionIndex) && currentExplanation"
+        class="quiz-explain"
+      >{{ stripInlineMarkdown(currentExplanation) }}</p>
     </div>
 
     <div class="options-group">
@@ -24,11 +28,11 @@
         type="button"
         class="option-card"
         :class="optionClass(optionIndex)"
-        :disabled="isComplete"
+        :disabled="isComplete || reviewing"
         @click="selectAnswer(optionIndex)"
       >
         <span class="radio-indicator"></span>
-        <span class="option-text">{{ option }}</span>
+        <span class="option-text">{{ stripInlineMarkdown(option) }}</span>
       </button>
     </div>
 
@@ -57,6 +61,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import QuizNav from '@/shared/ui/QuizNav.vue'
+import { stripInlineMarkdown } from '@/shared/text/plainText'
 
 const props = defineProps({
   questions: { type: Array, required: true },
@@ -64,6 +69,8 @@ const props = defineProps({
   isComplete: { type: Boolean, default: false },
   passed: { default: null },
   correctIndexes: { type: Array, default: () => [] },
+  explanations: { type: Array, default: () => [] },
+  reviewing: { type: Boolean, default: false },
   retrying: { type: Boolean, default: false }
 })
 
@@ -73,6 +80,7 @@ const currentQuestionIndex = ref(0)
 const currentQuestion = computed(() => props.questions[currentQuestionIndex.value])
 
 const correctIndex = computed(() => props.correctIndexes[currentQuestionIndex.value])
+const currentExplanation = computed(() => props.explanations[currentQuestionIndex.value] || '')
 
 const isWrong = (index) => {
   if (!props.isComplete) return false
@@ -90,11 +98,12 @@ const optionClass = (optionIndex) => {
 }
 
 const selectAnswer = (optionIndex) => {
-  if (props.isComplete) return
+  if (props.isComplete || props.reviewing) return
   emit('answer', currentQuestionIndex.value, optionIndex)
 }
 
 const goForward = () => {
+  if (props.reviewing) return
   if (currentQuestionIndex.value < props.questions.length - 1) {
     currentQuestionIndex.value += 1
     return
@@ -157,6 +166,18 @@ const goForward = () => {
   max-width: 36rem;
   color: #12202b;
   font-size: clamp(1.08rem, 1.4vw, 1.22rem);
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.quiz-explain {
+  margin: 0;
+  max-width: 36rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.9rem;
+  background: #f8e8ec;
+  color: #12202b;
+  font-size: 1rem;
   font-weight: 400;
   line-height: 1.5;
 }

@@ -5,10 +5,15 @@
         <span>Загрузка</span><span class="case-loading-dots">{{ loadingDots }}</span>
       </p>
       <p v-else-if="studyStore.error" class="case-status">{{ studyStore.error }}</p>
-      <p
+      <div
         v-else-if="studyStore.currentCase?.type === 'quiz' && studyStore.theory && !studyStore.quizStarted"
         class="case-theory"
-      >{{ studyStore.theory }}</p>
+      >
+        <template v-for="(part, index) in theoryParts" :key="index">
+          <h3 v-if="part.heading" class="theory-heading">{{ part.heading }}</h3>
+          <p v-if="part.text" class="theory-paragraph">{{ part.text }}</p>
+        </template>
+      </div>
       <QuizView
         v-else-if="studyStore.currentCase?.type === 'quiz'"
         :key="`${studyStore.currentCase.id}-${studyStore.quizGeneration}`"
@@ -17,6 +22,8 @@
         :is-complete="studyStore.isComplete"
         :passed="studyStore.passed"
         :correct-indexes="studyStore.correctIndexes"
+        :explanations="studyStore.explanations"
+        :reviewing="studyStore.isReviewing"
         :retrying="studyStore.isSubmitting"
         @answer="studyStore.answerQuestion"
         @complete="studyStore.complete"
@@ -52,6 +59,7 @@ import { useAIStore } from '@/modules/ai-mentor/store/useAIStore'
 import AuthErrorToast from '@/modules/auth/components/common/AuthErrorToast.vue'
 import QuizView from '@/modules/study/components/QuizView.vue'
 import BossCaseView from '@/modules/study/components/BossCaseView.vue'
+import { theoryParts as splitTheory } from '@/shared/text/plainText'
 
 const props = defineProps({
   buildingId: { type: String, required: true }
@@ -92,6 +100,8 @@ watch(() => studyStore.notice, (value) => {
     studyStore.notice = ''
   }, 3000)
 })
+
+const theoryParts = computed(() => splitTheory(studyStore.theory))
 
 const showTheoryNext = computed(() => (
   studyStore.currentCase?.type === 'quiz'
@@ -143,13 +153,36 @@ onUnmounted(() => {
   justify-content: center;
 }
 
-.case-status,
-.case-theory {
+.case-status {
   margin: 0;
   color: #12202b;
   font-size: 1.1rem;
   font-weight: 400;
   line-height: 1.45;
+}
+
+.case-theory {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-height: 0;
+  overflow: auto;
+}
+
+.theory-heading {
+  margin: 0.35rem 0 0;
+  color: #12202b;
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.theory-paragraph {
+  margin: 0;
+  color: #12202b;
+  font-size: 1.1rem;
+  font-weight: 400;
+  line-height: 1.55;
 }
 
 .case-loading {
