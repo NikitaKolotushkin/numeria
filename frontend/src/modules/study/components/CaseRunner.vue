@@ -1,5 +1,5 @@
 <template>
-  <div class="case-split">
+  <div v-if="studyStore.currentCase?.type !== 'open'" class="case-split">
     <div class="case-split-test">
       <p v-if="studyStore.isLoading" class="case-status">Загрузка</p>
       <p v-else-if="studyStore.error" class="case-status">{{ studyStore.error }}</p>
@@ -16,14 +16,24 @@
         />
       </template>
     </div>
-    <div class="case-split-side"></div>
+    <div v-if="studyStore.currentCase?.type !== 'open'" class="case-split-side"></div>
   </div>
+  <BossCaseView
+    v-if="!studyStore.isLoading && !studyStore.error && studyStore.currentCase?.type === 'open'"
+    :prompt="studyStore.theory"
+    :draft="studyStore.draft"
+    :submitting="studyStore.isSubmitting"
+    :field-error="studyStore.fieldError"
+    @update:draft="studyStore.draft = $event"
+    @submit="studyStore.submitBoss"
+  />
 </template>
 
 <script setup>
 import { onMounted, onUnmounted, watch } from 'vue'
 import { useStudyStore } from '@/modules/study/store/useStudyStore'
 import QuizView from '@/modules/study/components/QuizView.vue'
+import BossCaseView from '@/modules/study/components/BossCaseView.vue'
 
 const props = defineProps({
   buildingId: { type: String, required: true }

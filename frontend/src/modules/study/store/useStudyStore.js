@@ -10,6 +10,9 @@ export const useStudyStore = defineStore('study', () => {
   const theory = ref('')
   const blockId = ref('')
   const optionIds = ref([])
+  const draft = ref('')
+  const fieldError = ref('')
+  const isSubmitting = ref(false)
   const isLoading = ref(false)
   const isComplete = ref(false)
   const isRemote = ref(false)
@@ -33,6 +36,9 @@ export const useStudyStore = defineStore('study', () => {
     theory.value = ''
     blockId.value = ''
     optionIds.value = []
+    draft.value = ''
+    fieldError.value = ''
+    isSubmitting.value = false
     score.value = 0
     currentCase.value = null
 
@@ -53,8 +59,17 @@ export const useStudyStore = defineStore('study', () => {
       const track = await studyApi.getTrack(buildingId)
       if (id !== requestId) return
       const step = track.steps.find((item) => item.status === 'available' || item.status === 'retake_required')
-      if (!step || step.kind !== 'block') {
-        error.value = 'Сейчас нет открытого блока'
+      if (!step) {
+        const boss = track.steps.find((item) => item.kind === 'boss')
+        error.value = boss?.status === 'passed' ? 'Модуль сдан' : 'Сейчас нет открытого блока'
+        return
+      }
+      if (step.kind === 'boss') {
+        const boss = await studyApi.getBoss(step.id)
+        if (id !== requestId) return
+        blockId.value = boss.id
+        theory.value = boss.promptMarkdown || ''
+        currentCase.value = { id: boss.id, type: 'open', title: boss.title }
         return
       }
       blockId.value = step.id
@@ -80,6 +95,24 @@ export const useStudyStore = defineStore('study', () => {
     const next = [...answers.value]
     next[questionIndex] = optionIndex
     answers.value = next
+  }
+
+  async function submitBoss() {
+    if (!draft.value.trim()) {
+      fieldError.value = 'Напишите ответ'
+      return
+    }
+    fieldError.value = ''
+    isSubmitting.value = true
+    try {
+      await studyApi.submitBoss(blockId.value, draft.value.trim())
+      const gameStore = useGameStore()
+      await gameStore.load()
+    } catch (err) {
+      fieldError.value = err.message || 'Не удалось отправить ответ'
+    } finally {
+      isSubmitting.value = false
+    }
   }
 
   async function complete() {
@@ -119,6 +152,9 @@ export const useStudyStore = defineStore('study', () => {
     theory.value = ''
     blockId.value = ''
     optionIds.value = []
+    draft.value = ''
+    fieldError.value = ''
+    isSubmitting.value = false
     isLoading.value = false
     isComplete.value = false
     isRemote.value = false
@@ -131,6 +167,9 @@ export const useStudyStore = defineStore('study', () => {
     questions,
     answers,
     theory,
+    draft,
+    fieldError,
+    isSubmitting,
     isLoading,
     isComplete,
     score,
@@ -138,6 +177,7 @@ export const useStudyStore = defineStore('study', () => {
     openCase,
     answerQuestion,
     complete,
+    submitBoss,
     closeCase
   }
 })

@@ -39,5 +39,23 @@ export const studyApi = {
     } catch (error) {
       throw new Error(apiMessage(error, 'Не удалось отправить ответы'))
     }
+  },
+
+  async getBoss(bossId) {
+    try {
+      const { data } = await apiClient.get(`/study/bosses/${bossId}`)
+      return data
+    } catch (error) {
+      throw new Error(apiMessage(error, 'Не удалось подготовить задание'))
+    }
+  },
+
+  async submitBoss(bossId, answerText) {
+    try {
+      const { data } = await apiClient.post(`/study/bosses/${bossId}/attempts`, { answerText })
+      return data
+    } catch (error) {
+      throw new Error(apiMessage(error, 'Не удалось отправить ответ'))
+    }
   }
 }
