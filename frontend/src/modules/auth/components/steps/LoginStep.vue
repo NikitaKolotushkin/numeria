@@ -7,7 +7,7 @@
             <AuthInput
               v-model="modelValue.email"
               type="email"
-              placeholder="Почта @guu.ru"
+              placeholder="Почта"
               autocomplete="email"
             />
           </AuthFieldGroup>

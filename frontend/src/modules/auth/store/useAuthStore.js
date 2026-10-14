@@ -15,6 +15,9 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = authData.user
     localStorage.setItem('access_token', authData.accessToken)
     localStorage.setItem('user_data', JSON.stringify(authData.user))
+    if (authData.refreshToken) {
+      localStorage.setItem('refresh_token', authData.refreshToken)
+    }
   }
 
   async function login(credentials) {
@@ -43,6 +46,7 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = null
     user.value = null
     localStorage.removeItem('access_token')
+    localStorage.removeItem('refresh_token')
     localStorage.removeItem('user_data')
   }
 

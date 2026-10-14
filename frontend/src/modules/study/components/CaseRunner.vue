@@ -3,16 +3,18 @@
     <div class="case-split-test">
       <p v-if="studyStore.isLoading" class="case-status">Загрузка</p>
       <p v-else-if="studyStore.error" class="case-status">{{ studyStore.error }}</p>
-      <QuizView
-        v-else-if="studyStore.currentCase?.type === 'quiz'"
-        :key="studyStore.currentCase.id"
-        :questions="studyStore.questions"
-        :answers="studyStore.answers"
-        :is-complete="studyStore.isComplete"
-        :score="studyStore.score"
-        @answer="studyStore.answerQuestion"
-        @complete="studyStore.complete"
-      />
+      <template v-else-if="studyStore.currentCase?.type === 'quiz'">
+        <p v-if="studyStore.theory" class="case-theory">{{ studyStore.theory }}</p>
+        <QuizView
+          :key="studyStore.currentCase.id"
+          :questions="studyStore.questions"
+          :answers="studyStore.answers"
+          :is-complete="studyStore.isComplete"
+          :score="studyStore.score"
+          @answer="studyStore.answerQuestion"
+          @complete="studyStore.complete"
+        />
+      </template>
     </div>
     <div class="case-split-side"></div>
   </div>
@@ -66,10 +68,16 @@ onUnmounted(() => {
   background: #e6ebed;
 }
 
-.case-status {
+.case-status,
+.case-theory {
   margin: 0;
   color: #12202b;
   font-size: 0.95rem;
   font-weight: 400;
+  line-height: 1.45;
+}
+
+.case-theory {
+  margin-bottom: 1rem;
 }
 </style>

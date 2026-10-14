@@ -46,13 +46,13 @@
       >
         <p class="plaque-title">{{ activePlot.title }} (ур. {{ activePlot.level }})</p>
         <p class="plaque-line">
-          <strong>Освоение модуля:</strong> {{ buildingInfo[activePlot.id].mastery }}
+          <strong>Освоение модуля:</strong> {{ plaqueInfo.mastery }}
         </p>
         <p class="plaque-line">
-          <strong>Текущая тема:</strong> {{ buildingInfo[activePlot.id].topic }}
+          <strong>Текущая тема:</strong> {{ plaqueInfo.topic }}
         </p>
         <p class="plaque-line">
-          <strong>Для апгрейда:</strong> {{ buildingInfo[activePlot.id].upgrade }}
+          <strong>Для апгрейда:</strong> {{ plaqueInfo.upgrade }}
         </p>
       </aside>
 
@@ -111,8 +111,9 @@
 </template>
 
 <script setup>
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import { useAuthStore } from '@/modules/auth/store/useAuthStore'
+import { useGameStore } from '@/modules/game/store/useGameStore'
 import AuthWizardLayout from '@/modules/auth/components/AuthWizardLayout.vue'
 import CaseRunner from '@/modules/study/components/CaseRunner.vue'
 import { caseTitle } from '@/modules/study/api/mockData'
@@ -221,24 +222,27 @@ function spriteSrc(id, level) {
 }
 
 const authStore = useAuthStore()
+const gameStore = useGameStore()
 
 const CASE_LABEL = 'Кейс 2. Блок 3'
 
-const plots = [
+const plotDefs = [
   { id: 'laboratory', title: 'Лаборатория' },
   { id: 'factory', title: 'Завод' },
   { id: 'office', title: 'Офис' },
   { id: 'accounting', title: 'Бухгалтерия' },
   { id: 'marketing', title: 'Маркетинг' }
-].map((plot) => {
-  const level = 1
+]
+
+const plots = computed(() => plotDefs.map((plot) => {
+  const level = gameStore.levelOf(plot.id)
   return {
     ...plot,
     level,
     place: placeBuilding(plot.id, level),
     src: spriteSrc(plot.id, level)
   }
-})
+}))
 
 const buildingInfo = {
   laboratory: {
@@ -282,12 +286,31 @@ let plaquePlaceToken = 0
 let pendingOpen = null
 
 const playerName = computed(() => authStore.user?.firstName || 'Линад')
-const activePlot = computed(() => plots.find((plot) => plot.id === activeBuildingId.value) || null)
+const activePlot = computed(() => plots.value.find((plot) => plot.id === activeBuildingId.value) || null)
 const caseHeading = computed(() => {
-  const plot = plots.find((item) => item.id === selectedBuildingId.value) || plots[0]
+  const plot = plots.value.find((item) => item.id === selectedBuildingId.value) || plots.value[0]
   return `${plot.title}: ${CASE_LABEL}`
 })
-const caseSubtitle = computed(() => caseTitle(selectedBuildingId.value))
+const caseSubtitle = computed(() => {
+  return gameStore.building(selectedBuildingId.value)?.currentTitle || caseTitle(selectedBuildingId.value)
+})
+const plaqueInfo = computed(() => {
+  const live = activePlot.value ? gameStore.building(activePlot.value.id) : null
+  if (live) {
+    return {
+      mastery: live.mastery,
+      topic: live.currentTitle,
+      upgrade: live.nextCondition
+    }
+  }
+  return buildingInfo[activePlot.value?.id] || buildingInfo.laboratory
+})
+
+onMounted(() => {
+  if (authStore.isAuthenticated) {
+    gameStore.load().catch(() => {})
+  }
+})
 
 function pointOnStage(stage, clientX, clientY) {
   const rect = stage.getBoundingClientRect()
@@ -506,8 +529,8 @@ function onStageClick(event) {
 }
 
 const capitalLabel = computed(() => {
-  const value = authStore.user?.stats?.capital ?? 1600
-  return String(value)
+  if (authStore.isAuthenticated && gameStore.loaded) return String(gameStore.capital)
+  return '1600'
 })
 </script>
 

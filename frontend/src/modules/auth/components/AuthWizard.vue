@@ -49,7 +49,7 @@ import RegisterStepSecurity from '@/modules/auth/components/steps/RegisterStepSe
 import RegisterStepHobbies from '@/modules/auth/components/steps/RegisterStepHobbies.vue'
 import RegisterStepQuiz from '@/modules/auth/components/steps/RegisterStepQuiz.vue'
 import RegisterStepWelcome from '@/modules/auth/components/steps/RegisterStepWelcome.vue'
-import { isAllowedCourse, isAllowedRegistrationEmail } from '@/modules/auth/api/mockData'
+import { isAllowedCourse } from '@/modules/auth/api/mockData'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -85,7 +85,12 @@ const formData = reactive({
   password: '',
   confirmPassword: '',
   hobbies: [],
-  quizAnswers: []
+  quizAnswers: [],
+  consents: {
+    personalData: false,
+    terms: false,
+    aiAssessment: false
+  }
 })
 
 const showWelcome = () => {
@@ -131,16 +136,16 @@ const handleNext = async () => {
       errorMessage.value = 'Введите корректный email'
       return
     }
-    if (!isAllowedRegistrationEmail(formData.email)) {
-      errorMessage.value = 'Регистрация доступна только для почты @guu.ru'
-      return
-    }
     if (!formData.password || formData.password.length < 4) {
       errorMessage.value = 'Пароль должен содержать минимум 4 символа'
       return
     }
     if (formData.password !== formData.confirmPassword) {
       errorMessage.value = 'Пароли не совпадают'
+      return
+    }
+    if (!formData.consents.personalData || !formData.consents.terms || !formData.consents.aiAssessment) {
+      errorMessage.value = 'Нужны три согласия'
       return
     }
     currentStep.value = 3
