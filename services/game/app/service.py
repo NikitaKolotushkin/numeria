@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.balance import building_level, config_value, seed_balance
-from app.clients import study_buildings, user_names, user_onboarding
+from app.clients import fetch_study_buildings, study_buildings, user_names, user_onboarding
 from app.readiness import readiness_title
 from app.errors import ApiError
 from app.models import BUILDING_IDS, Building, Ledger, Player
@@ -39,6 +39,39 @@ def create_player(db: Session, user_id: uuid.UUID, answers: list[dict] | None = 
         db.rollback()
 
 
+def sync_buildings(db: Session, player: Player) -> None:
+    live = fetch_study_buildings(player.user_id)
+    if not live:
+        return
+    changed = False
+    for row in live:
+        building = db.get(Building, (player.user_id, row["buildingId"]))
+        if building is None:
+            continue
+        passed = int(row["passedSteps"])
+        total = int(row["totalSteps"])
+        title = str(row["currentTitle"])
+        condition = str(row["nextCondition"])
+        level = building_level(passed, total)
+        if (
+            building.passed_steps == passed
+            and building.total_steps == total
+            and building.level == level
+            and building.current_title == title
+            and building.next_condition == condition
+        ):
+            continue
+        building.passed_steps = passed
+        building.total_steps = total
+        building.level = level
+        building.current_title = title
+        building.next_condition = condition
+        changed = True
+    if changed:
+        player.updated_at = utcnow()
+        db.commit()
+
+
 def state(db: Session, user_id: uuid.UUID) -> dict:
     player = ensure_player(db, user_id)
     if not player.readiness:
@@ -47,6 +80,7 @@ def state(db: Session, user_id: uuid.UUID) -> dict:
             player.readiness = title
             player.updated_at = utcnow()
             db.commit()
+    sync_buildings(db, player)
     buildings = db.scalars(select(Building).where(Building.user_id == user_id)).all()
     ordered = sorted(buildings, key=lambda row: BUILDING_IDS.index(row.building_id))
     return {

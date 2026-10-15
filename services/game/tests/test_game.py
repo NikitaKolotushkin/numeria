@@ -80,8 +80,8 @@ def test_player_starts_at_level_one():
     assert body["rankPosition"] == 1
     accounting = next(item for item in body["buildings"] if item["buildingId"] == "accounting")
     assert accounting["level"] == 1
-    assert accounting["totalSteps"] == 4
-    assert accounting["mastery"] == "0 / 4"
+    assert accounting["totalSteps"] == 6
+    assert accounting["mastery"] == "0 / 6"
 
 
 def test_passed_block_raises_level_without_using_coins_for_it():

@@ -9,9 +9,9 @@ from app.config import settings
 logger = logging.getLogger("numeria.game")
 
 
-def study_buildings(user_id: uuid.UUID) -> list[dict]:
+def fetch_study_buildings(user_id: uuid.UUID) -> list[dict] | None:
     if not settings.study_base_url:
-        return fallback_buildings()
+        return None
     try:
         response = httpx.get(
             f"{settings.study_base_url.rstrip('/')}/internal/players/{user_id}/buildings",
@@ -20,13 +20,17 @@ def study_buildings(user_id: uuid.UUID) -> list[dict]:
         )
     except httpx.HTTPError:
         logger.warning("study buildings call failed")
-        return fallback_buildings()
+        return None
     if response.status_code != 200:
-        return fallback_buildings()
+        return None
     buildings = response.json().get("buildings")
     if not isinstance(buildings, list) or len(buildings) != 5:
-        return fallback_buildings()
+        return None
     return buildings
+
+
+def study_buildings(user_id: uuid.UUID) -> list[dict]:
+    return fetch_study_buildings(user_id) or fallback_buildings()
 
 
 def user_onboarding(user_id: uuid.UUID) -> list[dict]:

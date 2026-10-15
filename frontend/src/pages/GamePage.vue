@@ -234,27 +234,27 @@ const gameStore = useGameStore()
 const MODULES = {
   laboratory: {
     title: 'Аналитика и статистика',
-    totalSteps: 7,
+    totalSteps: 6,
     firstStep: 'Математическая статистика, блок 1'
   },
   factory: {
     title: 'Производство',
-    totalSteps: 7,
+    totalSteps: 6,
     firstStep: 'Экономика предприятия, блок 1'
   },
   office: {
     title: 'Основы и введение',
-    totalSteps: 10,
+    totalSteps: 6,
     firstStep: 'Введение в экономическую теорию, блок 1'
   },
   accounting: {
     title: 'Бухгалтерский учет',
-    totalSteps: 4,
+    totalSteps: 6,
     firstStep: 'Бухгалтерский учет, блок 1'
   },
   marketing: {
     title: 'Международные связи',
-    totalSteps: 7,
+    totalSteps: 6,
     firstStep: 'Маркетинг, блок 1'
   }
 }

@@ -383,24 +383,25 @@ def admin_attempts(db: Session, user_id: uuid.UUID) -> dict:
 
 def ensure_user(db: Session, user_id: uuid.UUID) -> None:
     seed_catalog(db)
-    existing = db.scalar(select(BlockProgress.user_id).where(BlockProgress.user_id == user_id).limit(1))
-    if existing is not None:
-        return
     now = utcnow()
-    modules = db.scalars(select(Module)).all()
+    modules = db.scalars(select(Module).order_by(Module.sort_order)).all()
     for module in modules:
         blocks = ordered_blocks(db, module.id)
-        for index, block in enumerate(blocks):
-            db.add(
-                BlockProgress(
-                    user_id=user_id,
-                    block_id=block.id,
-                    status="available" if index == 0 else "locked",
-                    updated_at=now,
-                )
-            )
         boss = db.scalar(select(Boss).where(Boss.module_id == module.id))
-        db.add(BossProgress(user_id=user_id, boss_id=boss.id, status="locked", updated_at=now))
+        if db.get(BossProgress, (user_id, boss.id)) is None:
+            db.add(BossProgress(user_id=user_id, boss_id=boss.id, status="locked", updated_at=now))
+        for block in blocks:
+            if db.get(BlockProgress, (user_id, block.id)) is None:
+                db.add(
+                    BlockProgress(
+                        user_id=user_id,
+                        block_id=block.id,
+                        status="locked",
+                        updated_at=now,
+                    )
+                )
+        db.flush()
+        refresh_availability(db, user_id, module.id)
     try:
         db.commit()
     except IntegrityError:
@@ -541,6 +542,9 @@ def refresh_availability(db: Session, user_id: uuid.UUID, module_id: str) -> Non
             opened = True
     if all_passed and boss_progress.status == "locked":
         boss_progress.status = "available"
+        boss_progress.updated_at = utcnow()
+    elif not all_passed and boss_progress.status == "available":
+        boss_progress.status = "locked"
         boss_progress.updated_at = utcnow()
 
 

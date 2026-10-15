@@ -77,7 +77,7 @@ def test_track_starts_with_one_open_block(monkeypatch):
     assert response.status_code == 200
     body = response.json()
     assert body["moduleId"] == "analytics"
-    assert len(body["steps"]) == 7
+    assert len(body["steps"]) == 6
     assert body["steps"][0]["status"] == "available"
     assert body["steps"][0]["questionCount"] == 0
     assert body["steps"][1]["status"] == "locked"

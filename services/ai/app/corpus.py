@@ -827,7 +827,7 @@ def _slot_seed(slot_key: str) -> int:
 
 
 def block_material(discipline_title: str, slot_title: str, count: int = 3) -> dict | None:
-    number = _block_number(slot_title)
+    number = ((_block_number(slot_title) - 1) % 3) + 1
     if (discipline_title, number) not in BLOCKS:
         return None
     tagged = []
