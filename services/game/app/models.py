@@ -20,6 +20,7 @@ class Player(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True)
     capital: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     xp: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    readiness: Mapped[str] = mapped_column(String(80), nullable=False, default="")
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 

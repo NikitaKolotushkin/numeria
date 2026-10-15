@@ -5,6 +5,7 @@ import { gameApi } from '@/modules/game/api/gameApi'
 export const useGameStore = defineStore('game', () => {
   const capital = ref(0)
   const xp = ref(0)
+  const readiness = ref('')
   const rankPosition = ref(null)
   const buildings = ref([])
   const loaded = ref(false)
@@ -21,6 +22,7 @@ export const useGameStore = defineStore('game', () => {
     const data = await gameApi.getState()
     capital.value = data.capital
     xp.value = data.xp
+    readiness.value = data.readiness || ''
     rankPosition.value = data.rankPosition
     buildings.value = data.buildings || []
     loaded.value = true
@@ -29,6 +31,7 @@ export const useGameStore = defineStore('game', () => {
   function reset() {
     capital.value = 0
     xp.value = 0
+    readiness.value = ''
     rankPosition.value = null
     buildings.value = []
     loaded.value = false
@@ -37,6 +40,7 @@ export const useGameStore = defineStore('game', () => {
   return {
     capital,
     xp,
+    readiness,
     rankPosition,
     buildings,
     loaded,

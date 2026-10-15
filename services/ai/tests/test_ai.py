@@ -49,12 +49,15 @@ def test_material_requires_token():
 
 def test_every_block_has_one_correct_option():
     assert len(BLOCKS) == 30
-    for item in BLOCKS.values():
+    per_discipline = {}
+    for (title, _number), item in BLOCKS.items():
         assert item["theory"].strip()
-        assert len(item["questions"]) == 3
+        assert len(item["questions"]) >= 3
+        per_discipline[title] = per_discipline.get(title, 0) + len(item["questions"])
         for quiz in item["questions"]:
             assert len(quiz["options"]) == 4
             assert sum(option["isCorrect"] for option in quiz["options"]) == 1
+    assert all(count >= 10 for count in per_discipline.values())
 
 
 def test_block_material_and_niche():
@@ -82,7 +85,7 @@ def test_block_material_and_niche():
     body = opened.json()
     assert "Ниши игрока" not in body["theoryMarkdown"]
     assert body["theoryMarkdown"].strip()
-    assert 5 <= len(body["questions"]) <= 10
+    assert len(body["questions"]) == 10
 
 
 def test_every_selected_hobby_reaches_the_material():

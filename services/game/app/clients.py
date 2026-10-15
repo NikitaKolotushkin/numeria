@@ -29,6 +29,28 @@ def study_buildings(user_id: uuid.UUID) -> list[dict]:
     return buildings
 
 
+def user_onboarding(user_id: uuid.UUID) -> list[dict]:
+    if not settings.users_base_url:
+        return []
+    try:
+        response = httpx.post(
+            f"{settings.users_base_url.rstrip('/')}/internal/profiles",
+            json={"userIds": [str(user_id)]},
+            headers={"X-Service-Token": settings.service_token},
+            timeout=settings.downstream_timeout_seconds,
+        )
+    except httpx.HTTPError:
+        logger.warning("users onboarding call failed")
+        return []
+    if response.status_code != 200:
+        return []
+    for row in response.json().get("users", []):
+        if row.get("userId") == str(user_id):
+            answers = row.get("onboardingAnswers")
+            return answers if isinstance(answers, list) else []
+    return []
+
+
 def user_names(user_ids: list[uuid.UUID]) -> dict[uuid.UUID, str]:
     if not user_ids or not settings.users_base_url:
         return {}

@@ -14,8 +14,14 @@ router = APIRouter()
 bearer = HTTPBearer(auto_error=False)
 
 
+class OnboardingAnswerIn(BaseModel):
+    questionId: int
+    optionIndex: int
+
+
 class PlayerIn(BaseModel):
     userId: uuid.UUID
+    onboardingAnswers: list[OnboardingAnswerIn] = []
 
 
 class ProgressIn(BaseModel):
@@ -55,7 +61,7 @@ def read_leaderboard(
 
 @router.post("/internal/players", status_code=204)
 def open_player(payload: PlayerIn, _service=Depends(service_token), db: Session = Depends(get_db)):
-    create_player(db, payload.userId)
+    create_player(db, payload.userId, [item.model_dump() for item in payload.onboardingAnswers])
 
 
 @router.post("/internal/progress", status_code=204)

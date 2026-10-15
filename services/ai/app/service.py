@@ -1,5 +1,4 @@
 import json
-import random
 import uuid
 from pathlib import Path
 
@@ -58,7 +57,7 @@ def material(user_id: uuid.UUID, kind: str, slot_title: str, discipline_title: s
     niches = list(profile.get("niches") or [])
     if not niches and profile.get("niche"):
         niches = [profile["niche"]]
-    question_count = random.randint(5, 10) if kind == "block" else 0
+    question_count = 10 if kind == "block" else 0
     parts = question_count + 1 if kind == "block" else 1
     focuses = content_focuses(niches, f"{kind}|{discipline_title}|{slot_title}", parts)
     generated = generate_material(

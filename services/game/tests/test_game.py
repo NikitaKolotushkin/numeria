@@ -76,6 +76,7 @@ def test_player_starts_at_level_one():
     body = client.get("/me/state", headers=headers).json()
     assert body["capital"] == 0
     assert body["xp"] == 0
+    assert body["readiness"] == ""
     assert body["rankPosition"] == 1
     accounting = next(item for item in body["buildings"] if item["buildingId"] == "accounting")
     assert accounting["level"] == 1
@@ -136,3 +137,34 @@ def test_retake_lowers_level_and_keeps_coins():
     assert body["capital"] == 100
     assert accounting["level"] == 1
     assert accounting["passedSteps"] == 0
+
+
+def test_registration_quiz_sets_readiness_without_raising_buildings():
+    user_id, headers = auth()
+    perfect = [
+        {"questionId": 1, "optionIndex": 2},
+        {"questionId": 2, "optionIndex": 1},
+        {"questionId": 3, "optionIndex": 1},
+        {"questionId": 4, "optionIndex": 2},
+        {"questionId": 5, "optionIndex": 1},
+    ]
+    created = client.post(
+        "/internal/players",
+        json={"userId": str(user_id), "onboardingAnswers": perfect},
+        headers=SERVICE,
+    )
+    assert created.status_code == 204
+    body = client.get("/me/state", headers=headers).json()
+    assert body["readiness"] == "Подготовленный"
+    assert body["capital"] == 0
+    assert all(item["level"] == 1 for item in body["buildings"])
+
+    missed = perfect.copy()
+    missed[0] = {"questionId": 1, "optionIndex": 0}
+    other, other_headers = auth()
+    client.post(
+        "/internal/players",
+        json={"userId": str(other), "onboardingAnswers": missed},
+        headers=SERVICE,
+    )
+    assert client.get("/me/state", headers=other_headers).json()["readiness"] == "Уверенный"

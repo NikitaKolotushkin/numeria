@@ -23,7 +23,10 @@
           src="@/assets/images/hub/avatar.png"
           alt=""
         />
-        <span>{{ authStore.user?.firstName || authStore.user?.nickname }}</span>
+        <span class="player-id">
+          <span>{{ authStore.user?.firstName || authStore.user?.nickname }}</span>
+          <span v-if="gameStore.readiness" class="player-readiness">{{ gameStore.readiness }}</span>
+        </span>
       </div>
       <div class="player-row">
         <img class="player-icon" src="@/assets/images/hub/coin.png" alt="" />
@@ -164,6 +167,18 @@
   .player-avatar {
     border-radius: 50%;
     object-fit: cover;
+  }
+
+  .player-id {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+  }
+
+  .player-readiness {
+    font-size: 0.78em;
+    opacity: 0.85;
   }
 
   .left-sidebar {

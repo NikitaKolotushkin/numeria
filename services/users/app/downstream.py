@@ -13,7 +13,7 @@ def notify_registered(user: User, hobbies: list[str], onboarding: list[dict]) ->
         (
             settings.game_base_url,
             "/internal/players",
-            {"userId": str(user.id)},
+            {"userId": str(user.id), "onboardingAnswers": onboarding},
         ),
         (
             settings.ai_base_url,

@@ -6,7 +6,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.balance import building_level, config_value, seed_balance
-from app.clients import study_buildings, user_names
+from app.clients import study_buildings, user_names, user_onboarding
+from app.readiness import readiness_title
 from app.errors import ApiError
 from app.models import BUILDING_IDS, Building, Ledger, Player
 
@@ -17,12 +18,18 @@ def utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def create_player(db: Session, user_id: uuid.UUID) -> None:
+def create_player(db: Session, user_id: uuid.UUID, answers: list[dict] | None = None) -> None:
     seed_balance(db)
-    if db.get(Player, user_id) is not None:
+    title = readiness_title(answers)
+    existing = db.get(Player, user_id)
+    if existing is not None:
+        if title and not existing.readiness:
+            existing.readiness = title
+            existing.updated_at = utcnow()
+            db.commit()
         return
     now = utcnow()
-    db.add(Player(user_id=user_id, capital=0, xp=0, updated_at=now))
+    db.add(Player(user_id=user_id, capital=0, xp=0, readiness=title, updated_at=now))
     db.flush()
     for row in study_buildings(user_id):
         db.add(new_building(user_id, row, now))
@@ -34,11 +41,18 @@ def create_player(db: Session, user_id: uuid.UUID) -> None:
 
 def state(db: Session, user_id: uuid.UUID) -> dict:
     player = ensure_player(db, user_id)
+    if not player.readiness:
+        title = readiness_title(user_onboarding(user_id))
+        if title:
+            player.readiness = title
+            player.updated_at = utcnow()
+            db.commit()
     buildings = db.scalars(select(Building).where(Building.user_id == user_id)).all()
     ordered = sorted(buildings, key=lambda row: BUILDING_IDS.index(row.building_id))
     return {
         "capital": player.capital,
         "xp": player.xp,
+        "readiness": player.readiness,
         "rankPosition": rank_of(db, player),
         "totalPlayers": player_count(db),
         "buildings": [public_building(row) for row in ordered],

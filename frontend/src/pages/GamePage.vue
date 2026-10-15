@@ -65,9 +65,12 @@
       </section>
 
       <aside class="player">
-        <div class="player-pill">
+        <div class="player-pill player-name">
           <img class="player-avatar" src="@/assets/images/hub/avatar.png" alt="" />
-          <span>{{ playerName }}</span>
+          <span class="player-id">
+            <span>{{ playerName }}</span>
+            <span v-if="gameStore.readiness" class="player-readiness">{{ gameStore.readiness }}</span>
+          </span>
         </div>
 
         <div class="player-pill">
@@ -98,9 +101,12 @@
             @prev="closeCase"
           >
             <template #header-end>
-              <div class="player-pill">
+              <div class="player-pill player-name">
                 <img class="player-avatar" src="@/assets/images/hub/avatar.png" alt="" />
-                <span>{{ playerName }}</span>
+                <span class="player-id">
+                  <span>{{ playerName }}</span>
+                  <span v-if="gameStore.readiness" class="player-readiness">{{ gameStore.readiness }}</span>
+                </span>
               </div>
             </template>
 
@@ -888,6 +894,27 @@ const capitalLabel = computed(() => {
   line-height: 1;
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+.player-name {
+  height: auto;
+  min-height: clamp(2.85rem, 6.2vh, 3.35rem);
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+}
+
+.player-id {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.12rem;
+  line-height: 1.15;
+}
+
+.player-readiness {
+  color: #5c6b73;
+  font-size: 0.75rem;
+  font-weight: 400;
 }
 
 .player-avatar,
