@@ -14,7 +14,7 @@
 COMPOSE_BAKE=false docker compose up -d --build postgres users study game ai frontend nginx
 ```
 
-Nginx для API снимает префикс сервиса и передаёт остаток пути. `POST /api/users/auth/register` приходит в `users` как `POST /auth/register`. В `proxy_pass` с переменной путь задаётся явно, иначе запрос уходит на `/`.
+Nginx для API снимает префикс сервиса и передаёт остаток пути. `POST /api/users/auth/register` приходит в `users` как `POST /auth/register`. Путь снимается через `rewrite`, а не через `$1` в `proxy_pass`: директива `set` и регулярное выражение в `proxy_cookie_path` затирают `$1`, и запрос уходит на `/`.
 
 `POSTGRES_MULTIPLE_DATABASES` создаёт семь баз только при первом создании тома Postgres. Если том на сервере уже был до этой настройки, базы не появятся сами, и миграция `users` упадёт. На сервере `JWT_SECRET` задаётся в `.env`. Значение по умолчанию в compose — только для локальной разработки.
 
