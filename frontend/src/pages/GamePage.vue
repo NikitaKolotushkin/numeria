@@ -877,6 +877,9 @@ const capitalLabel = computed(() => {
   top: 3.819%;
   display: grid;
   gap: 0.7rem;
+  width: max-content;
+  max-width: 22%;
+  min-width: 0;
 }
 
 .player-pill {
@@ -893,7 +896,9 @@ const capitalLabel = computed(() => {
   font-weight: 500;
   line-height: 1;
   white-space: nowrap;
-  flex-shrink: 0;
+  flex-shrink: 1;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .player-name {
@@ -909,12 +914,48 @@ const capitalLabel = computed(() => {
   align-items: flex-start;
   gap: 0.12rem;
   line-height: 1.15;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.player-id > span {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .player-readiness {
   color: #5c6b73;
   font-size: 0.75rem;
   font-weight: 400;
+}
+
+@container (max-width: 900px) {
+  .player {
+    max-width: 18%;
+    gap: 0.4rem;
+  }
+
+  .player-pill {
+    height: 2.35rem;
+    gap: 0.4rem;
+    padding: 0 0.7rem 0 0.55rem;
+    font-size: 0.82rem;
+  }
+
+  .player-name {
+    min-height: 2.35rem;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+  }
+
+  .player-avatar,
+  .player-coin {
+    width: 1.35rem;
+    height: 1.35rem;
+  }
 }
 
 .player-avatar,

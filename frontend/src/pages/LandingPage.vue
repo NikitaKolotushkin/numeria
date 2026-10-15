@@ -134,6 +134,9 @@
     display: flex;
     flex-direction: column;
     gap: clamp(0.85rem, 2.2vh, 1.35rem);
+    width: max-content;
+    max-width: min(16rem, 26vw);
+    min-width: 0;
   }
 
   .player-row {
@@ -165,11 +168,39 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 0.15rem;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .player-id > span {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .player-readiness {
     font-size: 0.78em;
     opacity: 0.85;
+  }
+
+  @media (max-width: 900px) {
+    .player-panel {
+      max-width: 24vw;
+      gap: 0.55rem;
+    }
+
+    .player-row {
+      font-size: 0.85rem;
+      gap: 0.4rem;
+    }
+
+    .player-icon,
+    .player-avatar {
+      width: 1.6rem;
+      height: 1.6rem;
+    }
   }
 
   .left-sidebar {
