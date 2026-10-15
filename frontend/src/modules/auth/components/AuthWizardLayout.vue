@@ -70,12 +70,19 @@ defineEmits(['prev', 'next'])
 }
 
 .wizard-header {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
   height: var(--auth-nav-size);
   gap: 1rem;
+}
+
+.wizard-header > :first-child,
+.wizard-header > :last-child {
+  position: relative;
+  z-index: 1;
 }
 
 .btn-nav {
@@ -107,7 +114,13 @@ defineEmits(['prev', 'next'])
 }
 
 .badge-pill {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  z-index: 0;
   height: 100%;
+  max-width: min(46%, calc(100% - 16rem));
+  transform: translateX(-50%);
   background: #ffffff;
   border-radius: 9999px;
   padding: 0 clamp(1.6rem, 3vw, 2.8rem);
@@ -120,6 +133,9 @@ defineEmits(['prev', 'next'])
   justify-content: center;
   user-select: none;
   min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .wizard-card {
