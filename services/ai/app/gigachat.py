@@ -289,7 +289,8 @@ def _strip_inline_markdown(text: str) -> str:
     cleaned = re.sub(r"\*\*(.+?)\*\*", r"\1", cleaned, flags=re.DOTALL)
     cleaned = re.sub(r"__(.+?)__", r"\1", cleaned, flags=re.DOTALL)
     cleaned = re.sub(r"(?<!\*)\*(?!\*)([^*\n]+)(?<!\*)\*(?!\*)", r"\1", cleaned)
-    return cleaned.replace("**", "").replace("__", "").replace("`", "").replace("*", "")
+    cleaned = cleaned.replace("**", "").replace("__", "").replace("`", "").replace("*", "")
+    return re.sub(r"#{3,}", "", cleaned)
 
 
 def _clean_student_text(text: str) -> str:
@@ -297,7 +298,8 @@ def _clean_student_text(text: str) -> str:
     for line in text.splitlines():
         heading = re.match(r"^(\s{0,3}#{1,6}\s+)(.*)$", line)
         if heading:
-            lines.append(heading.group(1) + _strip_inline_markdown(heading.group(2)).strip())
+            marker = "" if heading.group(1).count("#") >= 3 else heading.group(1)
+            lines.append(marker + _strip_inline_markdown(heading.group(2)).strip())
         else:
             lines.append(_strip_inline_markdown(line))
     return "\n".join(lines).strip()

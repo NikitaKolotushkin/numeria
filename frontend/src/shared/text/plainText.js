@@ -8,6 +8,7 @@ export function stripInlineMarkdown(value) {
     .replace(/\*\*/g, '')
     .replace(/__/g, '')
     .replace(/[`*]/g, '')
+    .replace(/#{3,}/g, '')
     .trim()
 }
 
