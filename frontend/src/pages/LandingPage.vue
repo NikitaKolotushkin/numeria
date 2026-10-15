@@ -32,10 +32,6 @@
         <img class="player-icon" src="@/assets/images/hub/coin.png" alt="" />
         <span>{{ capitalLabel }}</span>
       </div>
-      <div class="player-row">
-        <img class="player-icon" src="@/assets/images/hub/trophy.png" alt="" />
-        <span>Топ-{{ rankLabel }}</span>
-      </div>
     </aside>
 
     <!-- Сайдбар слева -->
@@ -88,11 +84,6 @@
   const capitalLabel = computed(() => {
     if (!gameStore.loaded) return '...'
     return gameStore.capital.toLocaleString('ru-RU')
-  })
-
-  const rankLabel = computed(() => {
-    if (!gameStore.loaded || gameStore.rankPosition == null) return '...'
-    return gameStore.rankPosition
   })
 
   onMounted(() => {
