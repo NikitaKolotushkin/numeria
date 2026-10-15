@@ -141,6 +141,18 @@ onUnmounted(() => {
   min-width: 0;
   min-height: 0;
   overflow: auto;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #c5ced4 transparent;
+}
+
+.case-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.case-body::-webkit-scrollbar-thumb {
+  background: #c5ced4;
+  border-radius: 9999px;
 }
 
 .quiz-nav-host:empty {

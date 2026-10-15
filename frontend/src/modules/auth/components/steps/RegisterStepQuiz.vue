@@ -15,12 +15,14 @@
             </button>
           </div>
 
-          <p class="question-text">{{ currentQuestion.question }}</p>
+          <div class="quiz-scroll">
+            <p class="question-text">{{ currentQuestion.question }}</p>
+          </div>
         </div>
       </template>
 
       <template #right>
-        <div class="options-group">
+        <div class="options-group quiz-scroll">
           <label
             v-for="(opt, optIdx) in currentQuestion.options"
             :key="optIdx"
@@ -84,6 +86,30 @@ const goForward = () => {
   display: flex;
   flex-direction: column;
   gap: clamp(0.9rem, 2vh, 1.35rem);
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
+.quiz-scroll {
+  min-height: 0;
+  overflow: auto;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #c5ced4 transparent;
+}
+
+.quiz-info .quiz-scroll {
+  flex: 1;
+}
+
+.quiz-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.quiz-scroll::-webkit-scrollbar-thumb {
+  background: #c5ced4;
+  border-radius: 9999px;
 }
 
 .quiz-pagination {
@@ -123,6 +149,9 @@ const goForward = () => {
   display: flex;
   flex-direction: column;
   gap: clamp(0.85rem, 1.8vh, 1.2rem);
+  flex: 1;
+  height: 100%;
+  min-height: 0;
 }
 
 .option-card {

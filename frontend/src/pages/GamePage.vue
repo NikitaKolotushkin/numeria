@@ -651,6 +651,25 @@ const capitalLabel = computed(() => {
 
 .case-overlay-panel {
   width: min(88vw, 74rem);
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.case-overlay-panel :deep(.wizard-container) {
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+}
+
+.case-overlay-panel :deep(.wizard-card) {
+  flex: 1;
+  height: auto;
+  max-height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .case-overlay :deep(.card-title) {

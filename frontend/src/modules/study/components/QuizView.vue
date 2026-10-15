@@ -14,14 +14,16 @@
         </button>
       </div>
 
-      <p class="question-text">{{ stripInlineMarkdown(currentQuestion.question) }}</p>
-      <p
-        v-if="isWrong(currentQuestionIndex) && currentExplanation"
-        class="quiz-explain"
-      >{{ stripInlineMarkdown(currentExplanation) }}</p>
+      <div ref="questionScroll" class="quiz-scroll">
+        <p class="question-text">{{ stripInlineMarkdown(currentQuestion.question) }}</p>
+        <p
+          v-if="isWrong(currentQuestionIndex) && currentExplanation"
+          class="quiz-explain"
+        >{{ stripInlineMarkdown(currentExplanation) }}</p>
+      </div>
     </div>
 
-    <div class="options-group">
+    <div ref="optionsScroll" class="options-group quiz-scroll">
       <button
         v-for="(option, optionIndex) in currentQuestion.options"
         :key="optionIndex"
@@ -59,7 +61,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import QuizNav from '@/shared/ui/QuizNav.vue'
 import { stripInlineMarkdown } from '@/shared/text/plainText'
 
@@ -77,7 +79,14 @@ const props = defineProps({
 const emit = defineEmits(['answer', 'complete', 'retry'])
 
 const currentQuestionIndex = ref(0)
+const questionScroll = ref(null)
+const optionsScroll = ref(null)
 const currentQuestion = computed(() => props.questions[currentQuestionIndex.value])
+
+watch(currentQuestionIndex, () => {
+  questionScroll.value?.scrollTo({ top: 0 })
+  optionsScroll.value?.scrollTo({ top: 0 })
+})
 
 const correctIndex = computed(() => props.correctIndexes[currentQuestionIndex.value])
 const currentExplanation = computed(() => props.explanations[currentQuestionIndex.value] || '')
@@ -117,18 +126,45 @@ const goForward = () => {
   display: grid;
   grid-template-columns: minmax(14rem, 0.95fr) minmax(0, 1.15fr);
   gap: clamp(1.25rem, 2.8vw, 2.4rem);
-  align-items: start;
+  align-items: stretch;
   height: 100%;
   min-height: 0;
+  overflow: hidden;
+}
+
+.quiz-scroll {
+  min-height: 0;
   overflow: auto;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #c5ced4 transparent;
+}
+
+.quiz-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.quiz-scroll::-webkit-scrollbar-thumb {
+  background: #c5ced4;
+  border-radius: 9999px;
 }
 
 .quiz-left {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch;
   gap: clamp(0.85rem, 1.8vh, 1.2rem);
   min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.quiz-left .quiz-scroll {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: clamp(0.85rem, 1.8vh, 1.2rem);
 }
 
 .quiz-pagination {
@@ -187,6 +223,8 @@ const goForward = () => {
   flex-direction: column;
   gap: clamp(0.75rem, 1.6vh, 1.05rem);
   width: 100%;
+  height: 100%;
+  min-height: 0;
 }
 
 .option-card {

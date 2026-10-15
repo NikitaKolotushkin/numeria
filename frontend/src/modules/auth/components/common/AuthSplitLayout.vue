@@ -57,5 +57,6 @@ defineProps({
 .variant-quiz .split-right {
   justify-content: flex-start;
   padding-top: clamp(0.35rem, 1.2vh, 0.8rem);
+  overflow: hidden;
 }
 </style>
